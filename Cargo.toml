@@ -5,3 +5,12 @@ edition = "2021"
 authors = ["ryota2357"]
 
 [dependencies]
+
+[dev-dependencies]
+paste = "1.0.15"
+proptest = { version = "1.5.0", features = ["attr-macro"] }
+
+[features]
+default = [ "last_byte" ]
+# default = []
+last_byte = []
