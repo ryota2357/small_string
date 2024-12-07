@@ -105,7 +105,7 @@ impl SmallString {
     }
 
     pub fn reserve(&mut self, additional: usize) {
-        self.0.reserve(additional).unwrap_with_msg()
+        self.try_reserve(additional).unwrap_with_msg()
     }
 
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), ReserveError> {
