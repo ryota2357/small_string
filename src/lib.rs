@@ -4,6 +4,7 @@ use core::{
     hash::{Hash, Hasher},
     ops::Deref,
     str,
+    str::FromStr,
 };
 use std::{borrow::Cow, ffi::OsStr};
 
@@ -312,7 +313,7 @@ impl From<&str> for SmallString {
     }
 }
 
-impl str::FromStr for SmallString {
+impl FromStr for SmallString {
     type Err = ReserveError;
 
     #[inline]
