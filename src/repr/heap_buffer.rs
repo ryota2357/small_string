@@ -56,6 +56,12 @@ impl HeapBuffer {
         Ok(HeapBuffer { ptr, len })
     }
 
+    pub(crate) fn with_capacity(capacity: usize) -> Result<Self, ReserveError> {
+        let len = TextSize::new(0);
+        let ptr = HeapBuffer::allocate_ptr(capacity)?;
+        Ok(HeapBuffer { ptr, len })
+    }
+
     pub(super) fn with_additional(text: &str, additional: usize) -> Result<Self, ReserveError> {
         let text_len = text.len();
 

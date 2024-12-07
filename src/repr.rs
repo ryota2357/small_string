@@ -59,6 +59,14 @@ impl Repr {
         }
     }
 
+    pub(crate) fn with_capacity(capacity: usize) -> Result<Self, ReserveError> {
+        if capacity <= MAX_INLINE_SIZE {
+            Ok(Repr::new())
+        } else {
+            HeapBuffer::with_capacity(capacity).map(Repr::from_heap)
+        }
+    }
+
     #[cfg(target_pointer_width = "64")]
     pub(crate) fn len(&self) -> usize {
         let mut len = {

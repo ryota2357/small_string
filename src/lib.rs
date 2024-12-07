@@ -63,6 +63,14 @@ impl SmallString {
         }
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        SmallString::try_with_capacity(capacity).unwrap_with_msg()
+    }
+
+    pub fn try_with_capacity(capacity: usize) -> Result<Self, ReserveError> {
+        Repr::with_capacity(capacity).map(SmallString)
+    }
+
     /// Return the length of the string in bytes, not [`char`] or graphemes.
     ///
     /// # Examples
