@@ -156,7 +156,7 @@ impl HeapBuffer {
                 unsafe { hint::unreachable_unchecked() }
             }
         };
-        let ptr = self.ptr.as_ptr().cast();
+        let ptr = self.allocation().cast();
         alloc::dealloc(ptr, layout);
     }
 
@@ -167,7 +167,7 @@ impl HeapBuffer {
     /// # Safety
     /// Caller must ensure tha following:
     ///  - The current reference count is greater than 0 when calling this method.
-    ///  - If the return value is 0, this HeapBuffer is properly destroyed.
+    ///  - If the return value is 1, this HeapBuffer is properly destroyed.
     pub(super) unsafe fn decrement_reference_count(&self) -> usize {
         debug_assert!(self.header().count.load(Acquire) > 0);
         self.header().count.fetch_sub(1, Release)

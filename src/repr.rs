@@ -142,7 +142,7 @@ impl Repr {
                 //
                 // SAFETY:
                 // We just checked that `heap` is not unique, so the reference count is at least
-                // 2. And then, the return value cannot be `0`, no need to check it and free the
+                // 2. And then, the return value cannot be `1`, no need to check it and free the
                 // HeapBuffer.
                 unsafe { heap.decrement_reference_count() };
 
@@ -244,7 +244,7 @@ impl Repr {
 
                 // SAFETY:
                 // We just checked that `heap` is not unique, so the reference count is at least
-                // 2. And then, the return value cannot be `0`, no need to check it and free the
+                // 2. And then, the return value cannot be `1`, no need to check it and free the
                 // HeapBuffer.
                 unsafe { heap.decrement_reference_count() };
 
@@ -300,10 +300,10 @@ impl Repr {
 
             // SAFETY:
             // - We just have reference to the HeapBuffer, so the reference count is at least 1.
-            // - We deallocate the HeapBuffer if the reference count becomes `0`.
+            // - We deallocate the HeapBuffer if the reference count becomes `1`.
             unsafe {
                 let count = heap.decrement_reference_count();
-                if count == 0 {
+                if count == 1 {
                     heap.dealloc();
                 }
             }
