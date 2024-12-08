@@ -1,5 +1,5 @@
 [package]
-name = "small_string"
+name = "lean_string"
 version = "0.1.0"
 edition = "2021"
 authors = ["ryota2357"]

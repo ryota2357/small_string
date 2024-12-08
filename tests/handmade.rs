@@ -1,12 +1,12 @@
-use small_string::SmallString;
+use lean_string::LeanString;
 
-const INLINE_LIMIT: usize = size_of::<SmallString>();
+const INLINE_LIMIT: usize = size_of::<LeanString>();
 
 #[test]
 fn new_empty() {
-    assert_eq!(SmallString::new(), "");
+    assert_eq!(LeanString::new(), "");
 
-    let s = SmallString::new();
+    let s = LeanString::new();
     assert_eq!(s.as_str(), "");
     assert!(s.is_empty());
     assert_eq!(s.len(), 0);
@@ -16,26 +16,26 @@ fn new_empty() {
 
 #[test]
 fn new_from_char() {
-    assert_eq!(SmallString::from('a'), "a");
-    assert_eq!(SmallString::from('👍'), "👍");
-    assert_eq!(SmallString::from(''), "");
+    assert_eq!(LeanString::from('a'), "a");
+    assert_eq!(LeanString::from('👍'), "👍");
+    assert_eq!(LeanString::from(''), "");
 }
 
 #[test]
 fn from_around_inline_limit() {
     let s = &String::from("0123456789abcdefg");
 
-    let inline = SmallString::from(&s[..INLINE_LIMIT - 1]);
+    let inline = LeanString::from(&s[..INLINE_LIMIT - 1]);
     assert_eq!(inline, s[..INLINE_LIMIT - 1]);
     assert!(!inline.is_heap_allocated());
     assert_eq!(inline.capacity(), INLINE_LIMIT);
 
-    let inline = SmallString::from(&s[..INLINE_LIMIT]);
+    let inline = LeanString::from(&s[..INLINE_LIMIT]);
     assert_eq!(inline, s[..INLINE_LIMIT]);
     assert!(!inline.is_heap_allocated());
     assert_eq!(inline.capacity(), INLINE_LIMIT);
 
-    let heap = SmallString::from(&s[..INLINE_LIMIT + 1]);
+    let heap = LeanString::from(&s[..INLINE_LIMIT + 1]);
     assert_eq!(heap, s[..INLINE_LIMIT + 1]);
     assert!(heap.is_heap_allocated());
     assert_eq!(heap.capacity(), INLINE_LIMIT + 1);
@@ -45,17 +45,17 @@ fn from_around_inline_limit() {
 fn from_around_inline_limit_static() {
     let s: &'static str = "0123456789abcdefg";
 
-    let inline = SmallString::from_static_str(&s[..INLINE_LIMIT - 1]);
+    let inline = LeanString::from_static_str(&s[..INLINE_LIMIT - 1]);
     assert_eq!(inline, s[..INLINE_LIMIT - 1]);
     assert!(!inline.is_heap_allocated());
     assert_eq!(inline.capacity(), INLINE_LIMIT);
 
-    let inline = SmallString::from_static_str(&s[..INLINE_LIMIT]);
+    let inline = LeanString::from_static_str(&s[..INLINE_LIMIT]);
     assert_eq!(inline, s[..INLINE_LIMIT]);
     assert!(!inline.is_heap_allocated());
     assert_eq!(inline.capacity(), INLINE_LIMIT);
 
-    let static_ = SmallString::from_static_str(&s[..INLINE_LIMIT + 1]);
+    let static_ = LeanString::from_static_str(&s[..INLINE_LIMIT + 1]);
     assert_eq!(static_, s[..INLINE_LIMIT + 1]);
     assert!(!static_.is_heap_allocated());
     assert_eq!(static_.capacity(), INLINE_LIMIT + 1);
@@ -63,7 +63,7 @@ fn from_around_inline_limit_static() {
 
 #[test]
 fn push_cow() {
-    let mut s = SmallString::new();
+    let mut s = LeanString::new();
     s.push('a');
     s.push('b');
     s.push_str("cdefgh");
@@ -110,7 +110,7 @@ fn push_cow() {
 
 #[test]
 fn push_from_static() {
-    let mut inline = SmallString::from_static_str("abcdefgh");
+    let mut inline = LeanString::from_static_str("abcdefgh");
     assert_eq!(inline, "abcdefgh");
     assert_eq!(inline.len(), 8);
     assert!(!inline.is_heap_allocated());
@@ -131,7 +131,7 @@ fn push_from_static() {
     assert_eq!(inline.len(), 18);
     assert!(inline.is_heap_allocated());
 
-    let mut static_ = SmallString::from_static_str("abcdefghijklmnopqrstuvwxyz");
+    let mut static_ = LeanString::from_static_str("abcdefghijklmnopqrstuvwxyz");
     assert_eq!(static_, "abcdefghijklmnopqrstuvwxyz");
     assert_eq!(static_.len(), 26);
     assert!(!static_.is_heap_allocated());
@@ -144,7 +144,7 @@ fn push_from_static() {
 
 #[test]
 fn pop_keep_capacity() {
-    let mut inline = SmallString::from("Hello World!");
+    let mut inline = LeanString::from("Hello World!");
     assert_eq!(inline.pop(), Some('!'));
     assert_eq!(inline, "Hello World");
     assert_eq!(inline.len(), 11);
@@ -158,7 +158,7 @@ fn pop_keep_capacity() {
     assert!(inline.is_empty());
     assert_eq!(inline.capacity(), INLINE_LIMIT);
 
-    let mut heap = SmallString::from("abcdefghijklmnopqrstuvwxyz");
+    let mut heap = LeanString::from("abcdefghijklmnopqrstuvwxyz");
     assert_eq!(heap.pop(), Some('z'));
     assert_eq!(heap, "abcdefghijklmnopqrstuvwxy");
     assert_eq!(heap.len(), 25);
@@ -175,7 +175,7 @@ fn pop_keep_capacity() {
 
 #[test]
 fn pop_cow() {
-    let mut s = SmallString::from("abcdefgh");
+    let mut s = LeanString::from("abcdefgh");
     assert_eq!(s.pop(), Some('h'));
     assert_eq!(s.len(), 7);
 
