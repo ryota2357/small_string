@@ -1,5 +1,8 @@
 # LeanString
 
+[![Crates.io](https://img.shields.io/crates/v/lean_string.svg)](https://crates.io/crates/lean_string)
+[![Documentation](https://docs.rs/lean_string/badge.svg)](https://docs.rs/lean_string)
+
 **⚠️This is a work in progress.**
 
 Compact, clone-on-write string.
