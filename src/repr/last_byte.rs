@@ -7,6 +7,7 @@ UTF-8 encoding rules:
 It is known that a byte starting with `10` is a trailing byte.
 */
 #[rustfmt::skip]
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum LastByte {
@@ -284,6 +285,7 @@ fn _static_assert() {
     }
 }
 
+#[allow(dead_code)]
 impl LastByte {
     pub const MASK_1100_0000: u8 = 0b1100_0000;
     pub const MASK_0011_1111: u8 = 0b0011_1111;
