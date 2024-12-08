@@ -1,0 +1,46 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Lint check
+        run: |
+          cargo check --all-features
+          cargo clippy --all-features -- -D warnings
+
+  test:
+    name: Rust Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        build_type: [debug, release]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test
+        run: |
+          if [ "${{ matrix.build_type }}" = "release" ]; then
+            flag="--release"
+          fi
+          cargo test $flag
+          cargo test $flag --all-features
