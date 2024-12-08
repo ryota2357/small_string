@@ -2,7 +2,7 @@ use core::{
     borrow::Borrow,
     cmp, fmt,
     hash::{Hash, Hasher},
-    ops::Deref,
+    ops::{Add, AddAssign, Deref},
     str,
     str::FromStr,
 };
@@ -407,6 +407,150 @@ impl FromStr for LeanString {
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Repr::from_str(s).map(Self)
+    }
+}
+
+impl FromIterator<char> for LeanString {
+    fn from_iter<T: IntoIterator<Item = char>>(iter: T) -> Self {
+        let iter = iter.into_iter();
+
+        let (lower_bound, _) = iter.size_hint();
+        let mut repr = match Repr::with_capacity(lower_bound) {
+            Ok(buf) => buf,
+            Err(_) => Repr::new(), // Ignore the error and hope that the lower_bound is incorrect.
+        };
+
+        for ch in iter {
+            repr.push_str(ch.encode_utf8(&mut [0; 4])).unwrap_with_msg();
+        }
+        LeanString(repr)
+    }
+}
+
+impl<'a> FromIterator<&'a char> for LeanString {
+    fn from_iter<T: IntoIterator<Item = &'a char>>(iter: T) -> Self {
+        iter.into_iter().copied().collect()
+    }
+}
+
+impl<'a> FromIterator<&'a str> for LeanString {
+    fn from_iter<I: IntoIterator<Item = &'a str>>(iter: I) -> Self {
+        let mut buf = LeanString::new();
+        buf.extend(iter);
+        buf
+    }
+}
+
+impl FromIterator<Box<str>> for LeanString {
+    fn from_iter<I: IntoIterator<Item = Box<str>>>(iter: I) -> Self {
+        let mut buf = LeanString::new();
+        buf.extend(iter);
+        buf
+    }
+}
+
+impl<'a> FromIterator<Cow<'a, str>> for LeanString {
+    fn from_iter<I: IntoIterator<Item = Cow<'a, str>>>(iter: I) -> Self {
+        let mut buf = LeanString::new();
+        buf.extend(iter);
+        buf
+    }
+}
+
+impl FromIterator<String> for LeanString {
+    fn from_iter<I: IntoIterator<Item = String>>(iter: I) -> Self {
+        let mut buf = LeanString::new();
+        buf.extend(iter);
+        buf
+    }
+}
+
+impl FromIterator<LeanString> for LeanString {
+    fn from_iter<T: IntoIterator<Item = LeanString>>(iter: T) -> Self {
+        let mut buf = LeanString::new();
+        buf.extend(iter);
+        buf
+    }
+}
+
+impl Extend<char> for LeanString {
+    fn extend<T: IntoIterator<Item = char>>(&mut self, iter: T) {
+        let iter = iter.into_iter();
+
+        let (lower_bound, _) = iter.size_hint();
+        // Ignore the error and hope that the lower_bound is incorrect.
+        let _ = self.try_reserve(lower_bound);
+
+        for ch in iter {
+            self.push(ch);
+        }
+    }
+}
+
+impl<'a> Extend<&'a char> for LeanString {
+    fn extend<T: IntoIterator<Item = &'a char>>(&mut self, iter: T) {
+        self.extend(iter.into_iter().copied());
+    }
+}
+
+impl<'a> Extend<&'a str> for LeanString {
+    fn extend<T: IntoIterator<Item = &'a str>>(&mut self, iter: T) {
+        iter.into_iter().for_each(|s| self.push_str(s));
+    }
+}
+
+impl Extend<Box<str>> for LeanString {
+    fn extend<T: IntoIterator<Item = Box<str>>>(&mut self, iter: T) {
+        iter.into_iter().for_each(move |s| self.push_str(&s));
+    }
+}
+
+impl<'a> Extend<Cow<'a, str>> for LeanString {
+    fn extend<T: IntoIterator<Item = Cow<'a, str>>>(&mut self, iter: T) {
+        iter.into_iter().for_each(move |s| self.push_str(&s));
+    }
+}
+
+impl Extend<String> for LeanString {
+    fn extend<T: IntoIterator<Item = String>>(&mut self, iter: T) {
+        iter.into_iter().for_each(move |s| self.push_str(&s));
+    }
+}
+
+impl Extend<LeanString> for LeanString {
+    fn extend<T: IntoIterator<Item = LeanString>>(&mut self, iter: T) {
+        for s in iter {
+            self.push_str(&s);
+        }
+    }
+}
+
+impl Extend<LeanString> for String {
+    fn extend<T: IntoIterator<Item = LeanString>>(&mut self, iter: T) {
+        for s in iter {
+            self.push_str(&s);
+        }
+    }
+}
+
+impl fmt::Write for LeanString {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.push_str(s);
+        Ok(())
+    }
+}
+
+impl Add<&str> for LeanString {
+    type Output = Self;
+    fn add(mut self, rhs: &str) -> Self::Output {
+        self.push_str(rhs);
+        self
+    }
+}
+
+impl AddAssign<&str> for LeanString {
+    fn add_assign(&mut self, rhs: &str) {
+        self.push_str(rhs);
     }
 }
 

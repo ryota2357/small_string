@@ -197,3 +197,23 @@ fn pop_cow() {
     // s is not changed
     assert_eq!(s, "abcdefghijklmnopqrstuvwxyz");
 }
+
+#[test]
+fn clear() {
+    let mut inline = LeanString::from("foo");
+    inline.clear();
+    assert_eq!(inline, "");
+
+    let mut heap: LeanString = core::iter::repeat('a').take(100).collect();
+    let cloned = heap.clone();
+    heap.clear();
+    assert_eq!(heap, "");
+    assert_eq!(cloned.len(), 100);
+}
+
+#[test]
+fn extend_char() {
+    let mut s = LeanString::from("Hello, ");
+    s.extend("world!".chars());
+    assert_eq!(s, "Hello, world!");
+}
