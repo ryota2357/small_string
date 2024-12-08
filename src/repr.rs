@@ -300,7 +300,7 @@ impl Repr {
 
             // SAFETY:
             // - We just have reference to the HeapBuffer, so the reference count is at least 1.
-            // - We deallocate the HeapBuffer if the reference count becomes `1`.
+            // - We deallocate the HeapBuffer if the reference count was `1`.
             unsafe {
                 let count = heap.decrement_reference_count();
                 if count == 1 {
