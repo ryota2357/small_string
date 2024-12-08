@@ -1,8 +1,12 @@
 [package]
 name = "lean_string"
-version = "0.1.0"
+description = "Compact, clone-on-write string."
+version = "0.0.1"
 edition = "2021"
 authors = ["ryota2357"]
+repository = "https://github.com/ryota2357/lean_string"
+readme = "README.md"
+license = "MIT"
 
 [dependencies]
 
