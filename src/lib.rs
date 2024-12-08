@@ -64,10 +64,44 @@ impl LeanString {
         }
     }
 
+    /// Creates a new empty [`LeanString`] with at least capacity bytes.
+    ///
+    /// A [`LeanString`] will inline strings if the length is less than or equal to
+    /// `2 * size_of::<usize>()` bytes. This means that the minimum capacity of a [`LeanString`]
+    /// is `2 * size_of::<usize>()` bytes.
+    ///
+    /// ## Panics
+    ///
+    /// This method panics if the system is out-of-memory. Use [`LeanString::try_with_capacity()`]
+    /// if you want to handle such a problem manually.
+    ///
+    /// # Examples
+    ///
+    /// ## inline capacity
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::with_capacity(4);
+    /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
+    /// assert!(!s.is_heap_allocated());
+    /// ```
+    ///
+    /// ## heap capacity
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::with_capacity(100);
+    /// assert_eq!(s.capacity(), 100);
+    /// assert!(s.is_heap_allocated());
+    /// ```
     pub fn with_capacity(capacity: usize) -> Self {
         LeanString::try_with_capacity(capacity).unwrap_with_msg()
     }
 
+    /// Fallible version of [`LeanString::with_capacity()`]
+    ///
+    /// This method won't panic if the system is out-of-memory, but return an [`ReserveError`].
+    /// Otherwise it behaves the same as [`LeanString::with_capacity()`].
     pub fn try_with_capacity(capacity: usize) -> Result<Self, ReserveError> {
         Repr::with_capacity(capacity).map(LeanString)
     }
@@ -89,18 +123,71 @@ impl LeanString {
         self.0.len()
     }
 
+    /// Returns `true` if the [`LeanString`] has a length of 0, `false` otherwise
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::new();
+    /// assert!(s.is_empty());
+    ///
+    /// s.push('a');
+    /// assert!(!s.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    /// Returns the capacity of the [`LeanString`], in bytes.
+    ///
+    /// A [`LeanString`] will inline strings if the length is less than or equal to
+    /// `2 * size_of::<usize>()` bytes. This means that the minimum capacity of a [`LeanString`]
+    /// is `2 * size_of::<usize>()` bytes.
+    ///
+    /// # Examples
+    ///
+    /// ### inline capacity
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::new();
+    /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
+    /// ```
+    ///
+    /// ### heap capacity
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::with_capacity(100);
+    /// assert_eq!(s.capacity(), 100);
+    /// ```
     pub fn capacity(&self) -> usize {
         self.0.capacity()
     }
 
+    /// Returns a string slice containing the entire [`LeanString`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::from("foo");
+    /// assert_eq!(s.as_str(), "foo");
+    /// ```
     pub fn as_str(&self) -> &str {
         self.0.as_str()
     }
 
+    /// Returns a byte slice containing the entire [`LeanString`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::from("hello");
+    /// assert_eq!(&[104, 101, 108, 108, 111], s.as_bytes());
+    /// ```
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
