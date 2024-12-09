@@ -209,17 +209,27 @@ impl LeanString {
     }
 
     pub fn push(&mut self, ch: char) {
-        self.0
-            .push_str(ch.encode_utf8(&mut [0; 4]))
-            .unwrap_with_msg()
+        self.try_push(ch).unwrap_with_msg()
+    }
+
+    pub fn try_push(&mut self, ch: char) -> Result<(), ReserveError> {
+        self.0.push_str(ch.encode_utf8(&mut [0; 4]))
     }
 
     pub fn pop(&mut self) -> Option<char> {
-        self.0.pop().unwrap_with_msg()
+        self.try_pop().unwrap_with_msg()
+    }
+
+    pub fn try_pop(&mut self) -> Result<Option<char>, ReserveError> {
+        self.0.pop()
     }
 
     pub fn push_str(&mut self, string: &str) {
-        self.0.push_str(string).unwrap_with_msg()
+        self.try_push_str(string).unwrap_with_msg()
+    }
+
+    pub fn try_push_str(&mut self, string: &str) -> Result<(), ReserveError> {
+        self.0.push_str(string)
     }
 
     pub fn clear(&mut self) {
