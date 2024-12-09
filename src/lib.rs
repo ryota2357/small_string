@@ -48,7 +48,7 @@ impl LeanString {
         LeanString(Repr::new())
     }
 
-    /// Creates a new `LeanString` from a `&'static str`.
+    /// Creates a new [`LeanString`] from a `&'static str`.
     ///
     /// # Examples
     ///
@@ -72,10 +72,15 @@ impl LeanString {
     /// `2 * size_of::<usize>()` bytes. This means that the minimum capacity of a [`LeanString`]
     /// is `2 * size_of::<usize>()` bytes.
     ///
-    /// ## Panics
+    /// # Panics
     ///
-    /// This method panics if the system is out-of-memory. Use [`LeanString::try_with_capacity()`]
-    /// if you want to handle such a problem manually.
+    /// Panics the following conditions are met:
+    ///
+    /// - The system is out-of-memory.
+    /// - On 64-bit architecture, the `capacity` is greater than `2^56 - 1`. Note that this is a
+    ///   very rare case, as it means that 64 PiB of heap memory is required.
+    ///
+    /// If you want to handle such a problem manually, use [`LeanString::try_with_capacity()`].
     ///
     /// # Examples
     ///
@@ -102,8 +107,9 @@ impl LeanString {
 
     /// Fallible version of [`LeanString::with_capacity()`]
     ///
-    /// This method won't panic if the system is out-of-memory, but return an [`ReserveError`].
-    /// Otherwise it behaves the same as [`LeanString::with_capacity()`].
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large in
+    /// 64-bit architecture, but return an [`ReserveError`]. Otherwise it behaves the same as
+    /// [`LeanString::with_capacity()`].
     pub fn try_with_capacity(capacity: usize) -> Result<Self, ReserveError> {
         Repr::with_capacity(capacity).map(LeanString)
     }

@@ -43,7 +43,7 @@ impl HeapBuffer {
     pub(super) fn new(text: &str) -> Result<Self, ReserveError> {
         let text_len = text.len();
 
-        let len = TextSize::new(text_len);
+        let len = TextSize::new(text_len)?;
         let ptr = HeapBuffer::allocate_ptr(text_len)?;
 
         // SAFETY:
@@ -56,8 +56,9 @@ impl HeapBuffer {
         Ok(HeapBuffer { ptr, len })
     }
 
+    #[cfg(target_pointer_width = "64")]
     pub(crate) fn with_capacity(capacity: usize) -> Result<Self, ReserveError> {
-        let len = TextSize::new(0);
+        let len = TextSize::new(0)?;
         let ptr = HeapBuffer::allocate_ptr(capacity)?;
         Ok(HeapBuffer { ptr, len })
     }
@@ -65,7 +66,7 @@ impl HeapBuffer {
     pub(super) fn with_additional(text: &str, additional: usize) -> Result<Self, ReserveError> {
         let text_len = text.len();
 
-        let len = TextSize::new(text_len);
+        let len = TextSize::new(text_len)?;
         let ptr = {
             let new_capacity = amortized_growth(text_len, additional);
             HeapBuffer::allocate_ptr(new_capacity)?
@@ -180,9 +181,20 @@ impl HeapBuffer {
     /// # Safety
     /// - `len` bytes in the buffer must be valid UTF-8.
     /// - buffer is unique.
+    #[cfg(target_pointer_width = "64")]
     pub(super) unsafe fn set_len(&mut self, len: usize) {
         debug_assert!(self.is_unique());
-        self.len = TextSize::new(len);
+        self.len = match TextSize::new(len) {
+            Ok(len) => len,
+            Err(_) => {
+                if cfg!(debug_assertions) {
+                    panic!("Invalid `set_len` call");
+                }
+                // SAFETY: `TextSize::new` should not return `Err` because `len` bytes is allocated
+                // as a valid UTF-8 string buffer.
+                unsafe { hint::unreachable_unchecked() }
+            }
+        };
     }
 
     fn allocate_ptr(capacity: usize) -> Result<NonNull<u8>, ReserveError> {
@@ -301,11 +313,11 @@ mod internal {
         };
 
         #[cfg(target_pointer_width = "64")]
-        pub(super) const fn new(size: usize) -> Self {
+        pub(super) const fn new(size: usize) -> Result<Self, ReserveError> {
             if size > Self::MAX {
-                capacity_overflow();
+                return Err(ReserveError);
             }
-            TextSize(size.to_le() | Self::TAG)
+            Ok(TextSize(size.to_le() | Self::TAG))
         }
     }
 }
