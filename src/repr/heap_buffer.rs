@@ -108,7 +108,7 @@ impl HeapBuffer {
         const ALLOC_LIMIT: usize = (isize::MAX as usize + 1) - HeapBuffer::align();
         let new_alloc_size = size_of::<Header>() + new_capacity;
         if new_alloc_size > ALLOC_LIMIT {
-            capacity_overflow();
+            return Err(ReserveError);
         }
 
         // SAFETY:
@@ -259,11 +259,6 @@ const fn max(x: usize, y: usize) -> usize {
     } else {
         y
     }
-}
-
-#[cold]
-const fn capacity_overflow() -> ! {
-    panic!("capacity overflow");
 }
 
 mod internal {
