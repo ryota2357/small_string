@@ -146,19 +146,16 @@ impl Repr {
                 // HeapBuffer.
                 unsafe { heap.decrement_reference_count() };
 
-                // SAFETY: `ptr` is valid for `len` bytes, and `HeapBuffer` contains valid UTF-8.
-                let str = unsafe {
-                    let ptr = self.0 as *mut u8;
-                    let slice = slice::from_raw_parts_mut(ptr, len);
-                    str::from_utf8_unchecked_mut(slice)
-                };
+                let str = heap.as_str();
                 let new_heap = HeapBuffer::with_additional(str, additional)?;
                 *self = Repr::from_heap(new_heap);
             } else if needed_capacity > heap.capacity() {
                 // heap is unique, and we need to reserve more capacity.
 
                 let amortized_capacity = heap_buffer::amortized_growth(len, additional);
-                // SAFETY: `heap` is unique.
+                // SAFETY:
+                // - `heap` is unique.
+                // - `amortized_capacity` is greater than `len`.
                 unsafe { heap.realloc(amortized_capacity)? };
             } else {
                 // We have enough capacity, no need to reserve.
