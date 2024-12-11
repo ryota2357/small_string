@@ -92,7 +92,7 @@ impl HeapBuffer {
     pub(super) unsafe fn realloc(&mut self, new_capacity: usize) -> Result<(), ReserveError> {
         debug_assert!(self.is_unique());
 
-        let cur_layout = match Self::layout_from_capacity(self.header().capacity) {
+        let cur_layout = match HeapBuffer::layout_from_capacity(self.header().capacity) {
             Ok(layout) => layout,
             Err(_) => {
                 if cfg!(debug_assertions) {
@@ -112,12 +112,12 @@ impl HeapBuffer {
         }
 
         // SAFETY:
-        // - `self.ptr` is already allocated by global allocator.
+        // - `self.allocation` is already allocated by global allocator.
         // - current allocation is allocated by `cur_layout`.
         // - `new_alloc_size` is greater than zero.
         // - `new_alloc_size` is ensured not to overflow when rounded up to the nearest multiple of
         //    alignment by `ALLOC_LIMIT`.
-        let allocation = unsafe { alloc::realloc(self.ptr.as_ptr(), cur_layout, new_alloc_size) };
+        let allocation = unsafe { alloc::realloc(self.allocation(), cur_layout, new_alloc_size) };
         if allocation.is_null() {
             return Err(ReserveError);
         }
@@ -145,7 +145,7 @@ impl HeapBuffer {
     pub(super) unsafe fn dealloc(&mut self) {
         debug_assert!(self.header().count.load(Acquire) == 0);
 
-        let layout = match Self::layout_from_capacity(self.header().capacity) {
+        let layout = match HeapBuffer::layout_from_capacity(self.header().capacity) {
             Ok(layout) => layout,
             Err(_) => {
                 if cfg!(debug_assertions) {
@@ -157,8 +157,7 @@ impl HeapBuffer {
                 unsafe { hint::unreachable_unchecked() }
             }
         };
-        let ptr = self.allocation().cast();
-        alloc::dealloc(ptr, layout);
+        alloc::dealloc(self.allocation(), layout);
     }
 
     pub(super) fn is_unique(&self) -> bool {
