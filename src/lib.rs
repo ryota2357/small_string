@@ -255,7 +255,7 @@ impl LeanString {
     ///
     /// # Panics
     ///
-    /// Panics when cloning the [`LeanString`] fails due to the system being out-of-memory. If you
+    /// Panics if cloning the [`LeanString`] fails due to the system being out-of-memory. If you
     /// want to handle such a problem manually, use [`LeanString::try_shrink_to_fit()`].
     ///
     /// # Examples
@@ -308,7 +308,7 @@ impl LeanString {
     ///
     /// # Panics
     ///
-    /// Panics when cloning the [`LeanString`] fails due to the system being out-of-memory. If you
+    /// Panics if cloning the [`LeanString`] fails due to the system being out-of-memory. If you
     /// want to handle such a problem manually, use [`LeanString::try_shrink_to()`].
     ///
     /// # Examples
@@ -343,6 +343,11 @@ impl LeanString {
 
     /// Appends the given [`char`] to the end of the [`LeanString`].
     ///
+    /// # Panics
+    ///
+    /// Panics if the system is out-of-memory. If you want to handle such a problem manually, use
+    /// [`LeanString::try_push()`].
+    ///
     /// # Examples
     ///
     /// ```
@@ -367,6 +372,11 @@ impl LeanString {
 
     /// Removes the last character from the [`LeanString`] and returns it.
     /// If the [`LeanString`] is empty, `None` is returned.
+    ///
+    /// # Panics
+    ///
+    /// Panics if cloning the [`LeanString`] fails due to the system being out-of-memory. If you
+    /// want to handle such a problem manually, use [`LeanString::try_pop()`].
     ///
     /// # Examples
     ///
@@ -393,6 +403,11 @@ impl LeanString {
     }
 
     /// Appends a given string slice onto the end of this [`LeanString`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if cloning the [`LeanString`] fails due to the system being out-of-memory. If you
+    /// want to handle such a problem manually, use [`LeanString::try_push_str()`].
     ///
     /// # Examples
     ///
