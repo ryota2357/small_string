@@ -203,8 +203,7 @@ impl LeanString {
     ///
     /// # Note
     ///
-    /// This method clones the [`LeanString`] if it is not unique, like other string modification
-    /// methods such as [`LeanString::push()`] or [`LeanString::pop()`].
+    /// This method clones the [`LeanString`] if it is not unique.
     ///
     /// # Panics
     ///
@@ -229,7 +228,7 @@ impl LeanString {
     /// s.reserve(100);
     ///
     /// // Now we have a heap storage.
-    /// assert_eq!(s.capacity(), 100);
+    /// assert!(s.capacity() >= s.len() + 100);
     /// assert!(s.is_heap_allocated());
     /// ```
     pub fn reserve(&mut self, additional: usize) {
