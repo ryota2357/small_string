@@ -32,7 +32,7 @@ fn _static_assert() {
 }
 
 impl LeanString {
-    /// Creates a new empty `LeanString`.
+    /// Creates a new empty [`LeanString`].
     ///
     /// Same as [`String::new()`], this will not allocate on the heap.
     ///
@@ -77,8 +77,8 @@ impl LeanString {
     /// Panics the following conditions are met:
     ///
     /// - The system is out-of-memory.
-    /// - On 64-bit architecture, the `capacity` is greater than `2^56 - 1`. Note that this is a
-    ///   very rare case, as it means that 64 PiB of heap memory is required.
+    /// - On 64-bit architecture, the `capacity` is greater than `2^56 - 1`.
+    /// - On 32-bit architecture, the `capacity` is greater than `2^32 - 1`.
     ///
     /// If you want to handle such a problem manually, use [`LeanString::try_with_capacity()`].
     ///
@@ -107,9 +107,8 @@ impl LeanString {
 
     /// Fallible version of [`LeanString::with_capacity()`]
     ///
-    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large in
-    /// 64-bit architecture, but return an [`ReserveError`]. Otherwise it behaves the same as
-    /// [`LeanString::with_capacity()`].
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
+    /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::with_capacity()`].
     pub fn try_with_capacity(capacity: usize) -> Result<Self, ReserveError> {
         Repr::with_capacity(capacity).map(LeanString)
     }
@@ -155,7 +154,7 @@ impl LeanString {
     ///
     /// # Examples
     ///
-    /// ### inline capacity
+    /// ## inline capacity
     ///
     /// ```
     /// # use lean_string::LeanString;
@@ -163,7 +162,7 @@ impl LeanString {
     /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
     /// ```
     ///
-    /// ### heap capacity
+    /// ## heap capacity
     ///
     /// ```
     /// # use lean_string::LeanString;
@@ -200,38 +199,159 @@ impl LeanString {
         self.0.as_bytes()
     }
 
+    /// Reserves capacity for at least `additional` bytes more than the current length.
+    ///
+    /// # Note
+    ///
+    /// This method clones the [`LeanString`] if it is not unique, like other string modification
+    /// methods such as [`LeanString::push()`] or [`LeanString::pop()`].
+    ///
+    /// # Panics
+    ///
+    /// Panics the following conditions are met:
+    ///
+    /// - The system is out-of-memory.
+    /// - On 64-bit architecture, the `capacity` is greater than `2^56 - 1`.
+    /// - On 32-bit architecture, the `capacity` is greater than `2^32 - 1`.
+    ///
+    /// If you want to handle such a problem manually, use [`LeanString::try_reserve()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::new();
+    ///
+    /// // We have a inline strage on the stack.
+    /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
+    /// assert!(!s.is_heap_allocated());
+    ///
+    /// s.reserve(100);
+    ///
+    /// // Now we have a heap storage.
+    /// assert_eq!(s.capacity(), 100);
+    /// assert!(s.is_heap_allocated());
+    /// ```
     pub fn reserve(&mut self, additional: usize) {
         self.try_reserve(additional).unwrap_with_msg()
     }
 
+    /// Fallible version of [`LeanString::reserve()`]
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
+    /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::reserve()`].
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), ReserveError> {
         self.0.reserve(additional)
     }
 
+    /// Appends the given [`char`] to the end of the [`LeanString`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::new();
+    /// s.push('f');
+    /// s.push('o');
+    /// s.push('o');
+    /// assert_eq!("foo", s);
+    /// ```
     pub fn push(&mut self, ch: char) {
         self.try_push(ch).unwrap_with_msg()
     }
 
+    /// Fallible version of [`LeanString::push()`]
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
+    /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::push()`].
     pub fn try_push(&mut self, ch: char) -> Result<(), ReserveError> {
         self.0.push_str(ch.encode_utf8(&mut [0; 4]))
     }
 
+    /// Removes the last character from the [`LeanString`] and returns it.
+    /// If the [`LeanString`] is empty, `None` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("abč");
+    ///
+    /// assert_eq!(s.pop(), Some('č'));
+    /// assert_eq!(s.pop(), Some('b'));
+    /// assert_eq!(s.pop(), Some('a'));
+    ///
+    /// assert_eq!(s.pop(), None);
+    /// ```
     pub fn pop(&mut self) -> Option<char> {
         self.try_pop().unwrap_with_msg()
     }
 
+    /// Fallible version of [`LeanString::pop()`]
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
+    /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::pop()`].
     pub fn try_pop(&mut self) -> Result<Option<char>, ReserveError> {
         self.0.pop()
     }
 
+    /// Appends a given string slice onto the end of this [`LeanString`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("foo");
+    ///
+    /// s.push_str("bar");
+    ///
+    /// assert_eq!("foobar", s);
+    /// ```
     pub fn push_str(&mut self, string: &str) {
         self.try_push_str(string).unwrap_with_msg()
     }
 
+    /// Fallible version of [`LeanString::push_str()`]
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
+    /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::push_str()`].
     pub fn try_push_str(&mut self, string: &str) -> Result<(), ReserveError> {
         self.0.push_str(string)
     }
 
+    /// Reduces the length of the [`LeanString`] to zero.
+    ///
+    /// If the [`LeanString`] is unique, this method will not change the capacity.
+    /// Otherwise, creates a new unique [`LeanString`] without heap allocation.
+    ///
+    /// # Examples
+    ///
+    /// ## unique
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("This is a example of unique LeanString");
+    /// assert_eq!(s.capacity(), 38);
+    ///
+    /// s.clear();
+    ///
+    /// assert_eq!(s, "");
+    /// assert_eq!(s.capacity(), 38);
+    /// ```
+    ///
+    /// ## not unique
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("This is a example of not unique LeanString");
+    /// assert_eq!(s.capacity(), 42);
+    ///
+    /// let s2 = s.clone();
+    /// s.clear();
+    ///
+    /// assert_eq!(s, "");
+    /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
+    /// ```
     pub fn clear(&mut self) {
         if self.0.is_unique() {
             // SAFETY:
@@ -243,6 +363,25 @@ impl LeanString {
         }
     }
 
+    /// Returns whether the [`LeanString`] is heap-allocated.
+    ///
+    /// # Examples
+    ///
+    /// ## inline
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::from("hello");
+    /// assert!(!s.is_heap_allocated());
+    /// ```
+    ///
+    /// ## heap
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let s = LeanString::from("More than 2 * size_of::<usize>() bytes is heap-allocated");
+    /// assert!(s.is_heap_allocated());
+    /// ```
     pub fn is_heap_allocated(&self) -> bool {
         self.0.is_heap_buffer()
     }
