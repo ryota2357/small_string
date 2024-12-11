@@ -243,6 +243,104 @@ impl LeanString {
         self.0.reserve(additional)
     }
 
+    /// Shrinks the capacity of the [`LeanString`] to match its length.
+    ///
+    /// The resulting capacity is always greater than `2 * size_of::<usize>()` bytes because
+    /// [`LeanString`] has inline (on the stack) storage.
+    ///
+    /// # Note
+    ///
+    /// This method clones the [`LeanString`] if it is not unique and its capacity is greater than
+    /// its length.
+    ///
+    /// # Panics
+    ///
+    /// Panics when cloning the [`LeanString`] fails due to the system being out-of-memory. If you
+    /// want to handle such a problem manually, use [`LeanString::try_shrink_to_fit()`].
+    ///
+    /// # Examples
+    ///
+    /// ## short string
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("foo");
+    ///
+    /// s.reserve(100);
+    /// assert_eq!(s.capacity(), 3 + 100);
+    ///
+    /// s.shrink_to_fit();
+    /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
+    /// ```
+    ///
+    /// ## long string
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("This is a text the length is more than 16 bytes");
+    ///
+    /// s.reserve(100);
+    /// assert!(s.capacity() > 16 + 100);
+    ///
+    /// s.shrink_to_fit();
+    /// assert_eq!(s.capacity(), s.len());
+    /// ```
+    pub fn shrink_to_fit(&mut self) {
+        self.try_shink_to_fit().unwrap_with_msg()
+    }
+
+    /// Fallible version of [`LeanString::shrink_to_fit()`]
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
+    /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::shrink_to_fit()`].
+    pub fn try_shink_to_fit(&mut self) -> Result<(), ReserveError> {
+        self.0.shrink_to(0)
+    }
+
+    /// Shrinks the capacity of the [`LeanString`] with a lower bound.
+    ///
+    /// The resulting capacity is always greater than `2 * size_of::<usize>()` bytes because the
+    /// [`LeanString`] has inline (on the stack) storage.
+    ///
+    /// # Note
+    ///
+    /// This method clones the [`LeanString`] if it is not unique and its capacity will be changed.
+    ///
+    /// # Panics
+    ///
+    /// Panics when cloning the [`LeanString`] fails due to the system being out-of-memory. If you
+    /// want to handle such a problem manually, use [`LeanString::try_shrink_to()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::with_capacity(100);
+    /// assert_eq!(s.capacity(), 100);
+    ///
+    /// // if the capacity was already bigger than the argument and unique, the call is no-op.
+    /// s.shrink_to(100);
+    /// assert_eq!(s.capacity(), 100);
+    ///
+    /// s.shrink_to(50);
+    /// assert_eq!(s.capacity(), 50);
+    ///
+    /// // if the string can be inlined, it is
+    /// s.shrink_to(10);
+    /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
+    /// ```
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.try_shrink_to(min_capacity).unwrap_with_msg()
+    }
+
+    /// Fallible version of [`LeanString::shrink_to()`]
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
+    /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::shrink_to()`].
+    pub fn try_shrink_to(&mut self, min_capacity: usize) -> Result<(), ReserveError> {
+        self.0.shrink_to(min_capacity)
+    }
+
     /// Appends the given [`char`] to the end of the [`LeanString`].
     ///
     /// # Examples

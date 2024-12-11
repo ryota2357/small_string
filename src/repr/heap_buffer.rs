@@ -87,10 +87,23 @@ impl HeapBuffer {
         self.header().capacity
     }
 
+    pub(super) fn len(&self) -> usize {
+        self.len.as_usize()
+    }
+
+    pub(super) fn as_str(&self) -> &str {
+        let len = self.len.as_usize();
+        let ptr = self.ptr.as_ptr();
+        // SAFETY: HeapBuffer contains valid `len` bytes of UTF-8 string.
+        unsafe { core::str::from_utf8_unchecked(slice::from_raw_parts(ptr, len)) }
+    }
+
     /// # Safety
-    /// The buffer must be unique. (HeapBuffer::is_unique() == true)
+    /// - The buffer must be unique. (HeapBuffer::is_unique() == true)
+    /// - `new_capacity` must be greater than or equal to the current string length.
     pub(super) unsafe fn realloc(&mut self, new_capacity: usize) -> Result<(), ReserveError> {
         debug_assert!(self.is_unique());
+        debug_assert!(self.len.as_usize() <= new_capacity);
 
         let cur_layout = match HeapBuffer::layout_from_capacity(self.header().capacity) {
             Ok(layout) => layout,
@@ -312,6 +325,13 @@ mod internal {
                 return Err(ReserveError);
             }
             Ok(TextSize(size.to_le() | Self::TAG))
+        }
+
+        #[cfg(target_pointer_width = "64")]
+        pub(super) fn as_usize(self) -> usize {
+            let size = self.0 ^ Self::TAG;
+            let bytes = size.to_ne_bytes();
+            usize::from_ne_bytes(bytes)
         }
     }
 }

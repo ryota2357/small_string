@@ -189,6 +189,64 @@ impl Repr {
         }
     }
 
+    pub fn shrink_to(&mut self, min_capacity: usize) -> Result<(), ReserveError> {
+        // If the buffer is not heap allocated, we can't shrink it.
+        if !self.is_heap_buffer() {
+            return Ok(());
+        }
+
+        // SAFETY: We did early return if the buffer is not HeapBuffer.
+        let heap = unsafe { self.as_heap_buffer_mut() };
+
+        let new_capacity = heap.len().max(min_capacity);
+        let old_capacity = heap.capacity();
+
+        if new_capacity <= MAX_INLINE_SIZE {
+            // We can convert the HeapBuffer to InlineBuffer.
+
+            // SAFETY:
+            // `heap.len() <= new_capacity` and `new_capacity <= MAX_INLINE_SIZE`
+            // thus, `heap.len() <= MAX_INLINE_SIZE`
+            let inline = unsafe {
+                let str = heap.as_str();
+                InlineBuffer::new(str)
+            };
+
+            // We should release the reference to the HeapBuffer and deallocate it if needed.
+            // SAFETY:
+            // - We just have reference to the HeapBuffer, so the reference count is at least 1.
+            // - We deallocate the HeapBuffer if the reference count was `1`.
+            unsafe {
+                let count = heap.decrement_reference_count();
+                if count == 1 {
+                    heap.dealloc();
+                }
+            }
+
+            *self = Repr::from_inline(inline);
+            return Ok(());
+        }
+
+        // No need to shrink the buffer.
+        if new_capacity >= old_capacity {
+            return Ok(());
+        }
+
+        if heap.is_unique() {
+            // Try to extend the buffer in place.
+            // SAFETY: `heap` is unique, and `new_capacity < old_capacity`
+            unsafe { heap.realloc(new_capacity)? };
+            Ok(())
+        } else {
+            // We need to create a new buffer because the current buffer is shared with others.
+            let str = heap.as_str();
+            let additional = new_capacity - str.len();
+            let new_heap = HeapBuffer::with_additional(str, additional)?;
+            *self = Repr::from_heap(new_heap);
+            Ok(())
+        }
+    }
+
     pub(crate) fn push_str(&mut self, string: &str) -> Result<(), ReserveError> {
         if string.is_empty() {
             return Ok(());
