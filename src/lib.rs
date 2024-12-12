@@ -74,7 +74,7 @@ impl LeanString {
     ///
     /// # Panics
     ///
-    /// Panics the following conditions are met:
+    /// Panics if any of the following conditions are met:
     ///
     /// - The system is out-of-memory.
     /// - On 64-bit architecture, the `capacity` is greater than `2^56 - 1`.
@@ -105,7 +105,7 @@ impl LeanString {
         LeanString::try_with_capacity(capacity).unwrap_with_msg()
     }
 
-    /// Fallible version of [`LeanString::with_capacity()`]
+    /// Fallible version of [`LeanString::with_capacity()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::with_capacity()`].
@@ -207,7 +207,7 @@ impl LeanString {
     ///
     /// # Panics
     ///
-    /// Panics the following conditions are met:
+    /// Panics if any of the following conditions are met:
     ///
     /// - The system is out-of-memory.
     /// - On 64-bit architecture, the `capacity` is greater than `2^56 - 1`.
@@ -235,7 +235,7 @@ impl LeanString {
         self.try_reserve(additional).unwrap_with_msg()
     }
 
-    /// Fallible version of [`LeanString::reserve()`]
+    /// Fallible version of [`LeanString::reserve()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::reserve()`].
@@ -289,7 +289,7 @@ impl LeanString {
         self.try_shink_to_fit().unwrap_with_msg()
     }
 
-    /// Fallible version of [`LeanString::shrink_to_fit()`]
+    /// Fallible version of [`LeanString::shrink_to_fit()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::shrink_to_fit()`].
@@ -333,7 +333,7 @@ impl LeanString {
         self.try_shrink_to(min_capacity).unwrap_with_msg()
     }
 
-    /// Fallible version of [`LeanString::shrink_to()`]
+    /// Fallible version of [`LeanString::shrink_to()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::shrink_to()`].
@@ -362,7 +362,7 @@ impl LeanString {
         self.try_push(ch).unwrap_with_msg()
     }
 
-    /// Fallible version of [`LeanString::push()`]
+    /// Fallible version of [`LeanString::push()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::push()`].
@@ -394,7 +394,7 @@ impl LeanString {
         self.try_pop().unwrap_with_msg()
     }
 
-    /// Fallible version of [`LeanString::pop()`]
+    /// Fallible version of [`LeanString::pop()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::pop()`].
@@ -423,7 +423,7 @@ impl LeanString {
         self.try_push_str(string).unwrap_with_msg()
     }
 
-    /// Fallible version of [`LeanString::push_str()`]
+    /// Fallible version of [`LeanString::push_str()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::push_str()`].
