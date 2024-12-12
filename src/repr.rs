@@ -326,6 +326,38 @@ impl Repr {
         Ok(Some(ch))
     }
 
+    pub(crate) fn insert_str(&mut self, idx: usize, string: &str) -> Result<(), ReserveError> {
+        assert!(self.as_str().is_char_boundary(idx));
+
+        let new_len = self.len().checked_add(string.len()).ok_or(ReserveError)?;
+
+        // reserve makes self unique and modifiable
+        self.reserve(string.len())?;
+        debug_assert!(self.is_unique());
+        debug_assert!(!self.is_static_buffer());
+
+        // SAFETY:
+        // - We contracted that we can split self at `idx`.
+        // - We just reserved enough capacity and set length after reserving.
+        // - The gap is filled by valid UTF-8 bytes.
+        unsafe {
+            // first move the tail to the new back
+            let data = self.as_slice_mut().as_mut_ptr();
+            ptr::copy(
+                data.add(idx),
+                data.add(idx + string.len()),
+                new_len - idx - string.len(),
+            );
+
+            // then insert the new bytes
+            ptr::copy_nonoverlapping(string.as_ptr(), data.add(idx), string.len());
+
+            // and lastly resize the string
+            self.set_len(new_len);
+        }
+        Ok(())
+    }
+
     pub(crate) fn is_unique(&self) -> bool {
         if self.is_heap_buffer() {
             // SAFETY: We just checked the discriminant to make sure we're heap allocated

@@ -431,6 +431,88 @@ impl LeanString {
         self.0.push_str(string)
     }
 
+    /// Inserts a character into the [`LeanString`] at a byte position.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the following conditions:
+    ///
+    /// 1. `idx` is larger than the [`LeanString`]'s length, or if it does not lie on a [`char`]
+    ///    boundary.
+    /// 2. The system is out-of-memory when cloning the [`LeanString`].
+    /// 3. The length of after inserting is greater than `2^56 - 1` on 64-bit architecture, or
+    ///    `2^32 - 1` on 32-bit architecture.
+    ///
+    /// For 2 and 3, if you want to handle such a problem manually, use [`LeanString::try_insert()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("Hello world");
+    ///
+    /// s.insert(11, '!');
+    /// assert_eq!("Hello world!", s);
+    ///
+    /// s.insert(5, ',');
+    /// assert_eq!("Hello, world!", s);
+    /// ```
+    pub fn insert(&mut self, idx: usize, ch: char) {
+        self.try_insert(idx, ch).unwrap_with_msg()
+    }
+
+    /// Fallible version of [`LeanString::insert()`].
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` becomes too large
+    /// by inserting a character, but return an [`ReserveError`]. Otherwise it behaves the same as
+    /// [`LeanString::insert()`].
+    ///
+    /// # Panics
+    ///
+    /// This method still panics if the `idx` is larger than the [`LeanString`]'s length, or if it
+    /// does not lie on a [`char`] boundary.
+    pub fn try_insert(&mut self, idx: usize, ch: char) -> Result<(), ReserveError> {
+        self.0.insert_str(idx, ch.encode_utf8(&mut [0; 4]))
+    }
+
+    /// Inserts a string slice into the [`LeanString`] at a byte position.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the following conditions:
+    ///
+    /// 1. `idx` is larger than the [`LeanString`]'s length, or if it does not lie on a [`char`] boundary.
+    /// 2. The system is out-of-memory when cloning the [`LeanString`].
+    /// 3. The length of after inserting is greater than `2^56 - 1` on 64-bit architecture, or
+    ///    `2^32 - 1` on 32-bit architecture.
+    ///
+    /// For 2 and 3, if you want to handle such a problem manually, use [`LeanString::try_insert_str()`].
+    ///
+    /// # Examples
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("bar");
+    /// s.insert_str(0, "foo");
+    /// assert_eq!("foobar", s);
+    /// ```
+    pub fn insert_str(&mut self, idx: usize, string: &str) {
+        self.try_insert_str(idx, string).unwrap_with_msg()
+    }
+
+    /// Fallible version of [`LeanString::insert_str()`].
+    ///
+    /// This method won't panic if the system is out-of-memory, or the `capacity` becomes too large
+    /// by inserting a string slice, but return an [`ReserveError`]. Otherwise it behaves the same
+    /// as [`LeanString::insert_str()`].
+    ///
+    /// # Panics
+    ///
+    /// This method still panics if the `idx` is larger than the [`LeanString`]'s length, or if it
+    /// does not lie on a [`char`] boundary.
+    pub fn try_insert_str(&mut self, idx: usize, string: &str) -> Result<(), ReserveError> {
+        self.0.insert_str(idx, string)
+    }
+
     /// Reduces the length of the [`LeanString`] to zero.
     ///
     /// If the [`LeanString`] is unique, this method will not change the capacity.
