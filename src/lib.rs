@@ -820,6 +820,8 @@ impl Hash for LeanString {
 }
 
 impl From<char> for LeanString {
+    #[inline]
+    #[track_caller]
     fn from(value: char) -> Self {
         LeanString(Repr::from_str(value.encode_utf8(&mut [0; 4])).unwrap_with_msg())
     }
@@ -830,6 +832,59 @@ impl From<&str> for LeanString {
     #[track_caller]
     fn from(value: &str) -> Self {
         LeanString(Repr::from_str(value).unwrap_with_msg())
+    }
+}
+
+impl From<String> for LeanString {
+    #[inline]
+    #[track_caller]
+    fn from(value: String) -> Self {
+        LeanString(Repr::from_str(&value).unwrap_with_msg())
+    }
+}
+
+impl From<&String> for LeanString {
+    #[inline]
+    #[track_caller]
+    fn from(value: &String) -> Self {
+        LeanString(Repr::from_str(value).unwrap_with_msg())
+    }
+}
+
+impl From<Cow<'_, str>> for LeanString {
+    fn from(cow: Cow<str>) -> Self {
+        match cow {
+            Cow::Borrowed(s) => s.into(),
+            Cow::Owned(s) => s.into(),
+        }
+    }
+}
+
+impl From<Box<str>> for LeanString {
+    #[inline]
+    #[track_caller]
+    fn from(value: Box<str>) -> Self {
+        LeanString(Repr::from_str(&value).unwrap_with_msg())
+    }
+}
+
+impl From<&LeanString> for LeanString {
+    fn from(value: &LeanString) -> Self {
+        value.clone()
+    }
+}
+
+impl From<LeanString> for String {
+    #[inline]
+    fn from(value: LeanString) -> Self {
+        value.as_str().into()
+    }
+}
+
+impl From<&LeanString> for String {
+    #[inline]
+    fn from(value: &LeanString) -> Self {
+        value.as_str().into()
     }
 }
 
