@@ -431,6 +431,87 @@ impl LeanString {
         self.0.push_str(string)
     }
 
+    /// Removes a [`char`] from the [`LeanString`] at a byte position and returns it.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the following conditions:
+    ///
+    /// 1. `idx` is larger than or equal tothe [`LeanString`]'s length, or if it does not lie on a [`char`]
+    /// 2. The system is out-of-memory when cloning the [`LeanString`].
+    ///
+    /// For 2, if you want to handle such a problem manually, use [`LeanString::try_remove()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("Hello 世界");
+    ///
+    /// assert_eq!(s.remove(6), '世');
+    /// assert_eq!(s.remove(1), 'e');
+    ///
+    /// assert_eq!(s, "Hllo 界");
+    /// ```
+    /// ## Past total length:
+    ///
+    /// ```should_panic
+    /// # use lean_string::LeanString;
+    /// let mut c = LeanString::from("hello there!");
+    /// c.remove(12);
+    /// ```
+    ///
+    /// ## Not on char boundary:
+    ///
+    /// ```should_panic
+    /// # use lean_string::LeanString;
+    /// let mut c = LeanString::from("🦄");
+    /// c.remove(1);
+    /// ```
+    pub fn remove(&mut self, idx: usize) -> char {
+        self.try_remove(idx).unwrap_with_msg()
+    }
+
+    /// Fallible version of [`LeanString::remove()`].
+    ///
+    /// This method won't panic if the system is out-of-memory, but return an [`ReserveError`].
+    /// Otherwise it behaves the same as [`LeanString::remove()`].
+    pub fn try_remove(&mut self, idx: usize) -> Result<char, ReserveError> {
+        self.0.remove(idx)
+    }
+
+    /// Retains only the characters specified by the `predicate`.
+    ///
+    /// If the `predicate` returns `true`, the character is kept, otherwise it is removed.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the system is out-of-memory when cloning the [`LeanString`]. If you want to
+    /// handle such a problem manually, use [`LeanString::try_retain()`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let mut s = LeanString::from("äb𝄞d€");
+    ///
+    /// let keep = [false, true, true, false, true];
+    /// let mut iter = keep.iter();
+    /// s.retain(|_| *iter.next().unwrap());
+    ///
+    /// assert_eq!(s, "b𝄞€");
+    /// ```
+    pub fn retain(&mut self, predicate: impl FnMut(char) -> bool) {
+        self.try_retain(predicate).unwrap_with_msg()
+    }
+
+    /// Fallible version of [`LeanString::retain()`].
+    ///
+    /// This method won't panic if the system is out-of-memory, but return an [`ReserveError`].
+    pub fn try_retain(&mut self, predicate: impl FnMut(char) -> bool) -> Result<(), ReserveError> {
+        self.0.retain(predicate)
+    }
+
     /// Inserts a character into the [`LeanString`] at a byte position.
     ///
     /// # Panics

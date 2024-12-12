@@ -326,6 +326,69 @@ impl Repr {
         Ok(Some(ch))
     }
 
+    pub(crate) fn remove(&mut self, idx: usize) -> Result<char, ReserveError> {
+        assert!(self.as_str().is_char_boundary(idx));
+
+        let len = self.len();
+        assert!(idx < len);
+
+        // We will modify the buffer, we need to make sure it.
+        self.ensure_modifiable()?;
+
+        // SAFETY:
+        // - We just made sure that the buffer is unique and modifiable (= not StaticBuffer).
+        // - We contracted that we can split self at `idx`.
+        let substr = unsafe { &mut self.as_str_mut()[idx..] };
+
+        // Get the char we want to remove
+        // SAFETY: We contracted that `idx` is less than `len`, so `substr` has at least one char.
+        let ch = unsafe { substr.chars().next().unwrap_unchecked() };
+        let ch_len = ch.len_utf8();
+
+        // Remove the char by shifting the rest of the string to the left.
+        // SAFETY: Both `src_ptr` and `dst_ptr` are valid for reads of `bytes_count` bytes, and are
+        // properly aligned.
+        unsafe {
+            let dst_ptr = substr.as_mut_ptr();
+            let src_ptr = dst_ptr.add(ch_len);
+            let bytes_count = substr.len() - ch_len;
+            ptr::copy(src_ptr, dst_ptr, bytes_count);
+            self.set_len(len - ch_len);
+        }
+
+        Ok(ch)
+    }
+
+    pub fn retain(&mut self, mut predicate: impl FnMut(char) -> bool) -> Result<(), ReserveError> {
+        // We will modify the buffer, we need to make sure it.
+        self.ensure_modifiable()?;
+
+        let str = unsafe { self.as_str_mut() };
+        let mut dst_idx = 0;
+        let mut src_idx = 0;
+
+        while let Some(ch) = str[src_idx..].chars().next() {
+            let ch_len = ch.len_utf8();
+            if predicate(ch) {
+                // SAFETY:`src_idx` and `dst_idx` are valid indices, and don't split a char.
+                unsafe {
+                    let src = str.as_mut_ptr().add(src_idx);
+                    let dst = str.as_mut_ptr().add(dst_idx);
+                    ptr::copy(src, dst, ch_len);
+                }
+                dst_idx += ch_len;
+            }
+            src_idx += ch_len;
+        }
+
+        // SAFETY:
+        // - `dst_idx <= src_idx`, and `src_idx <= len`, so `dst_idx <= len`.
+        // - `dst_idx` doesn't split a char because it is a sum of `ch_len`.
+        unsafe { self.set_len(dst_idx) }
+
+        Ok(())
+    }
+
     pub(crate) fn insert_str(&mut self, idx: usize, string: &str) -> Result<(), ReserveError> {
         assert!(self.as_str().is_char_boundary(idx));
 
@@ -409,6 +472,30 @@ impl Repr {
         self.last_byte() == LastByte::StaticMarker as u8
     }
 
+    /// Convert the buffer to a modifiable buffer.
+    ///
+    /// This method ensures:
+    ///
+    /// - The buffer is not StaticBuffer.
+    /// - If the buffer is HeapBuffer, it must be unique.
+    fn ensure_modifiable(&mut self) -> Result<(), ReserveError> {
+        if self.is_heap_buffer() {
+            // SAFETY: we just checked self is HeapBuffer
+            let heap = unsafe { self.as_heap_buffer_mut() };
+            if !heap.is_unique() {
+                // SAFETY: We just checked that `heap` is not unique, so the reference count is at
+                // least tow. No need to check it and free the HeapBuffer.
+                unsafe { heap.decrement_reference_count() };
+                *self = Repr::from_str(heap.as_str())?;
+            }
+        } else if self.is_static_buffer() {
+            // StaticBuffer is immutable, need to convert to other buffer.
+            let next = Repr::from_str(self.as_str())?;
+            self.replace_inner(next);
+        }
+        Ok(())
+    }
+
     /// # Safety
     /// - The buffer is not StaticBuffer
     /// - If the buffer is HeapBuffer, it must be unique.
@@ -427,6 +514,20 @@ impl Repr {
         };
 
         slice::from_raw_parts_mut(ptr, cap)
+    }
+
+    /// # Safety
+    /// - The buffer is not StaticBuffer
+    /// - If the buffer is HeapBuffer, it must be unique.
+    unsafe fn as_str_mut(&mut self) -> &mut str {
+        // NOTE: debug_assert is called in `as_slice_mut`
+
+        // SAFETY: A `Repr` contains valid UTF-8 bytes from `0..len`
+        unsafe {
+            let len = self.len();
+            let slice = self.as_slice_mut(); // slice.len() == capacity
+            str::from_utf8_unchecked_mut(slice.get_unchecked_mut(..len))
+        }
     }
 
     /// # Safety
