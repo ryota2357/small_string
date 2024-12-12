@@ -199,7 +199,97 @@ fn pop_cow() {
 }
 
 #[test]
-fn clear() {
+fn pop_from_static() {
+    let mut static_ = LeanString::from_static_str("abcdefghijklmnopqrstuvwxyz");
+    assert_eq!(static_.len(), 26);
+    assert_eq!(static_.pop(), Some('z'));
+    assert_eq!(static_, "abcdefghijklmnopqrstuvwxy");
+    assert_eq!(static_.len(), 25);
+
+    // static_ capacity equals to len
+    assert_eq!(static_.capacity(), static_.len());
+
+    // pop in static buffer is only changing its length
+    assert!(!static_.is_heap_allocated());
+}
+
+#[test]
+fn pop_from_static_cow() {
+    let mut static1 = LeanString::from_static_str("0123456789abcdef!");
+    assert_eq!(static1.pop(), Some('!'));
+    let static2 = static1.clone();
+    assert_eq!(static1.pop(), Some('f'));
+
+    assert_eq!(static1, "0123456789abcde");
+    assert_eq!(static1.capacity(), static1.len());
+    assert!(!static1.is_heap_allocated());
+
+    assert_eq!(static2, "0123456789abcdef");
+    assert_eq!(static2.capacity(), static2.len());
+    assert!(!static2.is_heap_allocated());
+}
+
+#[test]
+fn pop_from_empty() {
+    let mut inline = LeanString::new();
+    assert_eq!(inline, "");
+    assert_eq!(inline.pop(), None);
+    assert_eq!(inline, "");
+
+    let mut heap = LeanString::from("a".repeat(INLINE_LIMIT + 1));
+    for _ in 0..INLINE_LIMIT + 1 {
+        heap.pop();
+    }
+    assert_eq!(inline, "");
+    assert_eq!(heap.pop(), None);
+    assert_eq!(heap, "");
+
+    let mut static_ = LeanString::from_static_str("");
+    assert_eq!(static_.pop(), None);
+    assert_eq!(static_, "");
+}
+
+#[test]
+fn remove_cow() {
+    let mut inline = LeanString::from("Hello");
+    assert_eq!(inline.remove(4), 'o');
+    assert_eq!(inline.remove(0), 'H');
+    assert_eq!(inline, "ell");
+
+    let mut heap = LeanString::from("abcdefghijklmnopqrstuvwxyz");
+    assert_eq!(heap.remove(0), 'a');
+    let cloned = heap.clone();
+    assert_eq!(heap.remove(24), 'z');
+    assert_eq!(heap, "bcdefghijklmnopqrstuvwxy");
+    assert_eq!(cloned, "bcdefghijklmnopqrstuvwxyz");
+}
+
+#[test]
+#[should_panic(expected = "index out of bounds (index: 12, len: 12)")]
+fn remove_fail() {
+    let mut s = LeanString::from("Hello World!");
+    assert_eq!(s.len(), 12);
+    s.remove(12);
+}
+
+#[test]
+fn convert_static_to_inline_with_reserve() {
+    let s: &'static str = "1234567890ABCDEFGHIJ";
+    let mut static_ = LeanString::from_static_str(s);
+
+    for _ in 0..10 {
+        static_.pop();
+    }
+
+    assert_eq!(static_, "1234567890");
+    assert_eq!(static_.capacity(), static_.len()); // still in static buffer
+
+    static_.reserve(1);
+    assert_eq!(static_.capacity(), INLINE_LIMIT);
+}
+
+#[test]
+fn clear_cow() {
     let mut inline = LeanString::from("foo");
     inline.clear();
     assert_eq!(inline, "");
@@ -207,8 +297,13 @@ fn clear() {
     let mut heap: LeanString = core::iter::repeat('a').take(100).collect();
     let cloned = heap.clone();
     heap.clear();
+
     assert_eq!(heap, "");
     assert_eq!(cloned.len(), 100);
+
+    // heap is changed to inline
+    assert_eq!(heap.capacity(), INLINE_LIMIT);
+    assert!(!heap.is_heap_allocated());
 }
 
 #[test]

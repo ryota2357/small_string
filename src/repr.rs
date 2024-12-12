@@ -327,10 +327,13 @@ impl Repr {
     }
 
     pub(crate) fn remove(&mut self, idx: usize) -> Result<char, ReserveError> {
-        assert!(self.as_str().is_char_boundary(idx));
+        assert!(
+            self.as_str().is_char_boundary(idx),
+            "index is not a char boundary or out of bounds (index: {idx})",
+        );
 
         let len = self.len();
-        assert!(idx < len);
+        assert!(idx < len, "index out of bounds (index: {idx}, len: {len})",);
 
         // We will modify the buffer, we need to make sure it.
         self.ensure_modifiable()?;
