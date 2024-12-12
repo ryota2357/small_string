@@ -281,7 +281,7 @@ impl Repr {
             None => return Ok(None),
         };
 
-        // SAFETY: We know this is is a valid length which falls on a char boundary
+        // SAFETY: We know this is a valid length which falls on a char boundary
         let new_len = self.len() - ch.len_utf8();
 
         if self.is_heap_buffer() {
