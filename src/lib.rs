@@ -19,6 +19,8 @@ pub use reserve_error::ReserveError;
 #[cfg(feature = "last_byte")]
 pub use repr::LastByte;
 
+mod features;
+
 #[repr(transparent)]
 pub struct LeanString(Repr);
 

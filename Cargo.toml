@@ -8,12 +8,15 @@ repository = "https://github.com/ryota2357/lean_string"
 readme = "README.md"
 license = "MIT"
 
+[features]
+default = []
+last_byte = []
+
 [dependencies]
+serde = { version = "1.0", optional = true, default-features = false }
 
 [dev-dependencies]
 paste = "1.0.15"
 proptest = { version = "1.5.0", features = ["attr-macro"] }
-
-[features]
-default = []
-last_byte = []
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
