@@ -44,3 +44,4 @@ jobs:
           fi
           cargo test $flag
           cargo test $flag --all-features
+          RUSTFLAGS="--cfg loom" cargo test --test loom $flag
