@@ -1,11 +1,11 @@
 use super::*;
-use core::{
-    alloc::Layout,
-    hint, ptr,
-    ptr::NonNull,
-    sync::atomic::{AtomicUsize, Ordering::*},
-};
+use core::{alloc::Layout, hint, ptr, ptr::NonNull};
 use std::alloc;
+
+#[cfg(not(loom))]
+use core::sync::atomic::{AtomicUsize, Ordering::*};
+#[cfg(loom)]
+use loom::sync::atomic::{AtomicUsize, Ordering::*};
 
 use internal::TextSize;
 
