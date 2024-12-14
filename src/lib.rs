@@ -288,14 +288,14 @@ impl LeanString {
     /// assert_eq!(s.capacity(), s.len());
     /// ```
     pub fn shrink_to_fit(&mut self) {
-        self.try_shink_to_fit().unwrap_with_msg()
+        self.try_shrink_to_fit().unwrap_with_msg()
     }
 
     /// Fallible version of [`LeanString::shrink_to_fit()`].
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::shrink_to_fit()`].
-    pub fn try_shink_to_fit(&mut self) -> Result<(), ReserveError> {
+    pub fn try_shrink_to_fit(&mut self) -> Result<(), ReserveError> {
         self.0.shrink_to(0)
     }
 
