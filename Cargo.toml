@@ -24,6 +24,7 @@ serde_json = "1.0"
 
 [target.'cfg(loom)'.dependencies]
 loom = "0.7"
+dhat = "0.3.3"
 
 # https://github.com/tokio-rs/loom/issues/352
 [lints.rust]
