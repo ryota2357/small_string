@@ -1,6 +1,7 @@
 use crate::LeanString;
 use arbitrary::{Arbitrary, Result, Unstructured};
 
+#[cfg_attr(docsrs, doc(cfg(feature = "arbitrary")))]
 impl<'a> Arbitrary<'a> for LeanString {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         <&str as Arbitrary>::arbitrary(u).map(LeanString::from)

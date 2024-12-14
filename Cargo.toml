@@ -29,3 +29,7 @@ dhat = "0.3.3"
 # https://github.com/tokio-rs/loom/issues/352
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
