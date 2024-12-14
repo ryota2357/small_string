@@ -3,8 +3,6 @@
 [![Crates.io](https://img.shields.io/crates/v/lean_string.svg)](https://crates.io/crates/lean_string)
 [![Documentation](https://docs.rs/lean_string/badge.svg)](https://docs.rs/lean_string)
 
-**⚠️This is a work in progress.**
-
 Compact, clone-on-write string.
 
 ## Properties
@@ -28,7 +26,7 @@ Compact, clone-on-write string.
 ## TODOs
 
 - [ ] Support 32-bit architecture.
-- [ ] API compatibility with `String`.
+- [ ] More API compatibility with `String`.
 - [ ] Fuzz testing.
 - [ ] Benchmarking.
 - [ ] Documentation.
@@ -37,12 +35,35 @@ Compact, clone-on-write string.
 ## Example
 
 ```rust
-// TODO
+use lean_string::LeanString;
+
+// This is a zero-allocation operation, stored inlined.
+let small = LeanString::from("Hello");
+
+// More than 16 bytes, stored on the heap (64-bit architecture).
+let large = LeanString::from("This is a not long but can't store inlined!");
+
+// Clone is O(1), heap buffer is shared.
+let mut shared = large.clone();
+
+// Mutating a shared string will copy the heap buffer. (CoW)
+assert_eq!(shared.pop(), Some('!'));
+assert_eq!(shared, "This is a not long but can't store inlined");
+assert_eq!(large, shared + "!");
 ```
 
 ## Which should I use?
 
 TODO: Compare `LeanString` with `String`, `EcoString`, `CompactString`, etc...
+
+| Name                | Size     | Inline   | `&'static str` | CoW |
+| ------------------- | -------- | -------- | -------------- | ----|
+| `String`            | 24 bytes | No       | No             | No  |
+| `Cow<'static, str>` | 24 bytes | No       | Yes            | Yes |
+| `CompactString`     | 24 bytes | 24 bytes | Yes            | No  |
+| `EcoString`         | 16 bytes | 15 bytes | No             | Yes |
+| `LeanString`        | 16 bytes | 16 bytes | Yes            | Yes |
+
 
 ## Special Thanks
 
