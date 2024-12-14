@@ -3,9 +3,9 @@ use core::{alloc::Layout, hint, ptr, ptr::NonNull};
 use std::alloc;
 
 #[cfg(not(loom))]
-use core::sync::atomic::{AtomicUsize, Ordering::*};
+use core::sync::atomic::AtomicUsize;
 #[cfg(loom)]
-use loom::sync::atomic::{AtomicUsize, Ordering::*};
+use loom::sync::atomic::AtomicUsize;
 
 use internal::TextSize;
 
@@ -156,8 +156,6 @@ impl HeapBuffer {
     /// # Safety
     /// The reference count must be 0.
     pub(super) unsafe fn dealloc(&mut self) {
-        debug_assert!(self.header().count.load(Acquire) == 0);
-
         let layout = match HeapBuffer::layout_from_capacity(self.header().capacity) {
             Ok(layout) => layout,
             Err(_) => {
@@ -177,17 +175,20 @@ impl HeapBuffer {
         self.header().count.load(Acquire) == 1
     }
 
-    /// # Safety
-    /// Caller must ensure tha following:
-    ///  - The current reference count is greater than 0 when calling this method.
-    ///  - If the return value is 1, this HeapBuffer is properly destroyed.
-    pub(super) unsafe fn decrement_reference_count(&self) -> usize {
-        debug_assert!(self.header().count.load(Acquire) > 0);
-        self.header().count.fetch_sub(1, Release)
-    }
+    // /// # Safety
+    // /// Caller must ensure tha following:
+    // ///  - The current reference count is greater than 0 when calling this method.
+    // ///  - If the return value is 1, this HeapBuffer is properly destroyed.
+    // pub(super) unsafe fn decrement_reference_count(&self) -> usize {
+    //     self.header().count.fetch_sub(1, Release)
+    // }
+    //
+    // pub(super) fn increment_reference_count(&self) -> usize {
+    //     self.header().count.fetch_add(1, Relaxed)
+    // }
 
-    pub(super) fn increment_reference_count(&self) -> usize {
-        self.header().count.fetch_add(1, Release)
+    pub(super) fn reference_count(&self) -> &AtomicUsize {
+        &self.header().count
     }
 
     /// # Safety

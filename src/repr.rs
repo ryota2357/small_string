@@ -2,6 +2,11 @@ use super::ReserveError;
 
 use core::{mem, ptr, slice, str};
 
+#[cfg(not(loom))]
+use core::sync::atomic::{fence, Ordering::*};
+#[cfg(loom)]
+use loom::sync::atomic::{fence, Ordering::*};
+
 mod heap_buffer;
 use heap_buffer::HeapBuffer;
 
@@ -136,21 +141,21 @@ impl Repr {
             // SAFETY: We just checked that `self` is HeapBuffer
             let heap = unsafe { self.as_heap_buffer_mut() };
 
-            if !heap.is_unique() {
-                // We should decrement the reference count of the current HeapBuffer, because we
-                // reallocate a new HeapBuffer based on the current HeapBuffer.
-                //
-                // SAFETY:
-                // We just checked that `heap` is not unique, so the reference count is at least
-                // 2. And then, the return value cannot be `1`, no need to check it and free the
-                // HeapBuffer.
-                unsafe { heap.decrement_reference_count() };
+            // Because `fetch_sub` is already atomic, we should use `Release` ordering to avoid
+            // unexpected drop of the buffer and to ensure that the buffer is unique.
+            if heap.reference_count().fetch_sub(1, Release) == 1 {
+                // `heap` is unique, we can reallocate in place.
 
-                let str = heap.as_str();
-                let new_heap = HeapBuffer::with_additional(str, additional)?;
-                *self = Repr::from_heap(new_heap);
-            } else if needed_capacity > heap.capacity() {
-                // heap is unique, and we need to reserve more capacity.
+                // We need to rollback the reference count.
+                // We should use `Acquire` ordering to prevent reordering of the reallocation and
+                // the reference count increment.
+                // This is a same meaning of `fence(Acquire); fech_add(1, Relaxed);`
+                heap.reference_count().fetch_add(1, Acquire);
+
+                if heap.capacity() >= needed_capacity {
+                    // No need to reserve more capacity.
+                    return Ok(());
+                }
 
                 let amortized_capacity = heap_buffer::amortized_growth(len, additional);
                 // SAFETY:
@@ -158,7 +163,11 @@ impl Repr {
                 // - `amortized_capacity` is greater than `len`.
                 unsafe { heap.realloc(amortized_capacity)? };
             } else {
-                // We have enough capacity, no need to reserve.
+                // heap is shared, we need to reallocate a new buffer.
+                // We already decremented the reference count, no need to touch it again.
+                let str = heap.as_str();
+                let new_heap = HeapBuffer::with_additional(str, additional)?;
+                *self = Repr::from_heap(new_heap);
             }
             Ok(())
         } else if self.is_static_buffer() {
@@ -209,15 +218,17 @@ impl Repr {
                 InlineBuffer::new(str)
             };
 
-            // We should release the reference to the HeapBuffer and deallocate it if needed.
-            // SAFETY:
-            // - We just have reference to the HeapBuffer, so the reference count is at least 1.
-            // - We deallocate the HeapBuffer if the reference count was `1`.
-            unsafe {
-                let count = heap.decrement_reference_count();
-                if count == 1 {
-                    heap.dealloc();
-                }
+            // Same as Arc::drop. See `replace_inner` method for the explanation of the ordering.
+            if heap.reference_count().fetch_sub(1, Release) == 1 {
+                // only the current thread has the reference, we can deallocate the buffer.
+
+                // See `replace_inner` method for the explanation of the ordering.
+                fence(Acquire);
+
+                // SAFETY: The old value of `fetch_sub` was `1`, so now it is `0`. And we used
+                // `Acquire` fence to be sure that `reference count becomes 0` happens-before the
+                // drop.
+                unsafe { heap.dealloc() };
             }
 
             *self = Repr::from_inline(inline);
@@ -288,21 +299,16 @@ impl Repr {
             // SAFETY: We just checked that `self` is HeapBuffer
             let heap = unsafe { self.as_heap_buffer_mut() };
 
-            if heap.is_unique() {
-                // SAFETY:
-                // - `new_len <= len <= capacity`
-                // - We just checked that `self` is unique.
+            // See `reverse` method for the explanation of the ordering.
+            if heap.reference_count().fetch_sub(1, Release) == 1 {
+                // `heap` is unique, we can set the new length in place.
+
+                // See `reverse` method for the explanation of the ordering.
+                heap.reference_count().fetch_add(1, Acquire);
+
+                // SAFETY: `heap` is unique, we can reallocate in place.
                 unsafe { heap.set_len(new_len) };
             } else {
-                // We need to reallocate a new buffer (not only HeapBuffer) because the current
-                // buffer is shared with others.
-
-                // SAFETY:
-                // We just checked that `heap` is not unique, so the reference count is at least
-                // 2. And then, the return value cannot be `1`, no need to check it and free the
-                // HeapBuffer.
-                unsafe { heap.decrement_reference_count() };
-
                 // SAFETY: `ptr` is valid for `len` bytes, and `HeapBuffer` contains valid UTF-8.
                 let str = unsafe {
                     let ptr = self.0 as *mut u8;
@@ -437,7 +443,14 @@ impl Repr {
         if self.is_heap_buffer() {
             // SAFETY: We just checked that `self` is HeapBuffer.
             let heap = unsafe { self.as_heap_buffer() };
-            heap.increment_reference_count();
+
+            // Same as Arc::clone.
+            // No need to use `Acquire` ordering because a new reference is created from the
+            // existing reference, we don't need to wait for the previous operations to complete.
+            // No need to use `Release` ordering because we don't need after operations to wait for
+            // the new reference to be created, which should be handled (synchronized) at the
+            // drop/dealloc (decrement reference count) time.
+            heap.reference_count().fetch_add(1, Relaxed);
         }
 
         // SAFETY:
@@ -451,14 +464,20 @@ impl Repr {
             // SAFETY: We just checked the discriminant to make sure we're heap allocated
             let heap = unsafe { self.as_heap_buffer_mut() };
 
-            // SAFETY:
-            // - We just have reference to the HeapBuffer, so the reference count is at least 1.
-            // - We deallocate the HeapBuffer if the reference count was `1`.
-            unsafe {
-                let count = heap.decrement_reference_count();
-                if count == 1 {
-                    heap.dealloc();
-                }
+            // Same as Arc::drop.
+            // Because `fetch_sub` is already atomic, we should use `Release` ordering to avoid
+            // unexpected drop of the buffer and to ensure that the buffer is unique.
+            if heap.reference_count().fetch_sub(1, Release) == 1 {
+                // only the current thread has the reference, we can deallocate the buffer.
+
+                // We need to wait for the reference count decrement to complete before
+                // deallocating the buffer.
+                fence(Acquire);
+
+                // SAFETY: The old value of `fetch_sub` was `1`, so now it is `0`. And we used
+                // `Acquire` fence to be sure that `reference count becomes 0` happens-before the
+                // drop.
+                unsafe { heap.dealloc() };
             }
         }
 
@@ -485,11 +504,18 @@ impl Repr {
         if self.is_heap_buffer() {
             // SAFETY: we just checked self is HeapBuffer
             let heap = unsafe { self.as_heap_buffer_mut() };
-            if !heap.is_unique() {
-                // SAFETY: We just checked that `heap` is not unique, so the reference count is at
-                // least tow. No need to check it and free the HeapBuffer.
-                unsafe { heap.decrement_reference_count() };
-                *self = Repr::from_str(heap.as_str())?;
+
+            // See `reverse` method for the explanation of the ordering.
+            if heap.reference_count().fetch_sub(1, Release) == 1 {
+                // `heap` is unique, we can modify it in place.
+
+                // See `reverse` method for the explanation of the ordering.
+                heap.reference_count().fetch_add(1, Acquire);
+            } else {
+                // SAFETY: `heap` is shared, we need to create a new buffer.
+                let str = heap.as_str();
+                let new_heap = HeapBuffer::new(str)?;
+                *self = Repr::from_heap(new_heap);
             }
         } else if self.is_static_buffer() {
             // StaticBuffer is immutable, need to convert to other buffer.
