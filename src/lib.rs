@@ -682,6 +682,10 @@ impl Drop for LeanString {
     }
 }
 
+// SAFETY: `LeanString` is `repr(transparent)` over `Repr`, and `Repr` works like `Arc`.
+unsafe impl Send for LeanString {}
+unsafe impl Sync for LeanString {}
+
 impl Default for LeanString {
     fn default() -> Self {
         Self::new()
