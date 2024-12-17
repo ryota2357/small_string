@@ -14,11 +14,11 @@ use std::{borrow::Cow, ffi::OsStr};
 mod repr;
 use repr::Repr;
 
-mod reserve_error;
-pub use reserve_error::ReserveError;
-
 #[cfg(feature = "last_byte")]
 pub use repr::LastByte;
+
+mod errors;
+pub use errors::*;
 
 mod features;
 
