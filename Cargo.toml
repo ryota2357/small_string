@@ -23,9 +23,9 @@ proptest = { version = "1.5.0", features = ["attr-macro"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-[target.'cfg(loom)'.dependencies]
-loom = "0.7"
-dhat = "0.3.3"
+[target.'cfg(loom)']
+dependencies.loom = { version = "0.7.2", optional = true }
+dev-dependencies.dhat = "0.3.3"
 
 # https://github.com/tokio-rs/loom/issues/352
 [lints.rust]

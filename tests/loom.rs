@@ -1,37 +1,77 @@
-// RUSTFLAGS="--cfg loom" cargo test --test loom --release
+// RUSTFLAGS="--cfg loom" cargo test --test loom --release --features loom -- --test-threads=1
 #![cfg(loom)]
 
 use lean_string::LeanString;
 use loom::{thread, thread::JoinHandle};
+use paste::paste;
 
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
-fn model() -> JoinHandle<()> {
-    let mut one = LeanString::from("12345678901234567890");
-    let two = one.clone();
-
-    let th = thread::spawn(move || {
-        let mut three = two.clone();
-        three.push('a');
-
-        assert_eq!(two, "12345678901234567890");
-        assert_eq!(three, "12345678901234567890a");
-    });
-
-    one.push('a');
-    assert_eq!(one, "12345678901234567890a");
-
-    th
+macro_rules! test_model {
+    (
+        run: $run:block
+        fn $name:ident( $($arg:ident : $aty:ty),* $(,)? ) $(-> $ret:ty)? $body:block
+    ) => {
+        paste! {
+            #[test]
+            fn [<run_ $name _model>]() {
+                loom::model(|| {
+                    let _profiler = dhat::Profiler::builder().testing().build();
+                    $run
+                    let stats = dhat::HeapStats::get();
+                    // https://github.com/tokio-rs/loom/issues/369
+                    dhat::assert_eq!(stats.curr_blocks, 1);
+                })
+            }
+        }
+        fn $name( $($arg : $aty),* ) $(-> $ret)? {
+            $body
+        }
+    }
 }
 
-#[test]
-fn run() {
-    loom::model(|| {
-        let _profiler = dhat::Profiler::builder().testing().build();
-        model().join().unwrap();
-        let stats = dhat::HeapStats::get();
-        // https://github.com/tokio-rs/loom/issues/369
-        dhat::assert_eq!(stats.curr_blocks, 1);
-    })
+test_model! {
+    run: {
+        push2().join().unwrap();
+    }
+    fn push2() -> JoinHandle<()> {
+        let mut one = LeanString::from("12345678901234567890");
+        let two = one.clone();
+
+        let th = thread::spawn(move || {
+            let mut three = two.clone();
+            three.push('a');
+
+            assert_eq!(two, "12345678901234567890");
+            assert_eq!(three, "12345678901234567890a");
+        });
+
+        one.push('a');
+        assert_eq!(one, "12345678901234567890a");
+
+        th
+    }
+}
+
+test_model! {
+    run: {
+        pop2().join().unwrap();
+    }
+    fn pop2() -> JoinHandle<()> {
+        let mut one = LeanString::from("abcdefghijklmnopqrstuvwxyz");
+        let two = one.clone();
+
+        let th = thread::spawn(move || {
+            let mut three = two.clone();
+            assert_eq!(three.pop(), Some('z'));
+            assert_eq!(two, "abcdefghijklmnopqrstuvwxyz");
+            assert_eq!(three, "abcdefghijklmnopqrstuvwxy");
+        });
+
+        assert_eq!(one.pop(), Some('z'));
+        assert_eq!(one, "abcdefghijklmnopqrstuvwxy");
+
+        th
+    }
 }
