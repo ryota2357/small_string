@@ -116,6 +116,121 @@ impl LeanString {
         Repr::with_capacity(capacity).map(LeanString)
     }
 
+    /// Converts a slice of bytes to a [`LeanString`].
+    ///
+    /// If the slice is not valid UTF-8, an error is returned.
+    ///
+    /// # Examples
+    ///
+    /// ## valid UTF-8
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let bytes = vec![240, 159, 166, 128];
+    /// let string = LeanString::from_utf8(&bytes).expect("valid UTF-8");
+    ///
+    /// assert_eq!(string, "🦀");
+    /// ```
+    ///
+    /// ## invalid UTF-8
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let bytes = &[255, 255, 255];
+    /// let result = LeanString::from_utf8(bytes);
+    ///
+    /// assert!(result.is_err());
+    /// ```
+    pub fn from_utf8(buf: &[u8]) -> Result<Self, str::Utf8Error> {
+        let str = str::from_utf8(buf)?;
+        Ok(LeanString::from(str))
+    }
+
+    /// Converts a slice of bytes to a [`LeanString`], including invalid characters.
+    ///
+    /// During this conversion, all invalid characters are replaced with the
+    /// [`char::REPLACEMENT_CHARACTER`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let invalid_bytes = b"Hello \xF0\x90\x80World";
+    /// let string = LeanString::from_utf8_lossy(invalid_bytes);
+    ///
+    /// assert_eq!(string, "Hello �World");
+    /// ```
+    pub fn from_utf8_lossy(buf: &[u8]) -> Self {
+        let mut ret = LeanString::with_capacity(buf.len());
+        for chunk in buf.utf8_chunks() {
+            ret.push_str(chunk.valid());
+            if !chunk.invalid().is_empty() {
+                ret.push(char::REPLACEMENT_CHARACTER);
+            }
+        }
+        ret
+    }
+
+    /// Converts a slice of bytes to a [`LeanString`] without checking if the bytes are valid
+    /// UTF-8.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it does not check that the bytes passed to it are valid
+    /// UTF-8. If this constraint is violated, it may cause memory unsafety issues.
+    pub unsafe fn from_utf8_unchecked(buf: &[u8]) -> Self {
+        let str = unsafe { str::from_utf8_unchecked(buf) };
+        LeanString::from(str)
+    }
+
+    /// Decodes a slice of UTF-16 encoded bytes to a [`LeanString`], returning an error if `buf`
+    /// contains any invalid code points.
+    ///
+    /// # Examples
+    ///
+    /// ## valid UTF-16
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075, 0x0073, 0x0069, 0x0063];
+    /// assert_eq!(LeanString::from_utf16(v).unwrap(), "𝄞music");
+    /// ```
+    ///
+    /// ## invalid UTF-16
+    ///
+    /// ```
+    /// // 𝄞mu<invalid>ic
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075, 0xD800, 0x0069, 0x0063];
+    /// assert!(String::from_utf16(v).is_err());
+    /// ```
+    pub fn from_utf16(buf: &[u16]) -> Result<Self, FromUtf16Error> {
+        let mut ret = LeanString::with_capacity(buf.len());
+        for c in char::decode_utf16(buf.iter().copied()) {
+            match c {
+                Ok(c) => ret.push(c),
+                Err(_) => return Err(FromUtf16Error),
+            }
+        }
+        Ok(ret)
+    }
+
+    /// Decodes a slice of UTF-16 encoded bytes to a [`LeanString`], replacing invalid code points
+    /// with the [`char::REPLACEMENT_CHARACTER`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use lean_string::LeanString;
+    /// // 𝄞mus<invalid>ic<invalid>
+    /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075, 0x0073, 0xDD1E, 0x0069, 0x0063, 0xD834];
+    /// assert_eq!(LeanString::from_utf16_lossy(v), "𝄞mus\u{FFFD}ic\u{FFFD}");
+    /// ```
+    pub fn from_utf16_lossy(buf: &[u16]) -> Self {
+        char::decode_utf16(buf.iter().copied())
+            .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
+            .collect()
+    }
+
     /// Returns the length of the string in bytes, not [`char`] or graphemes.
     ///
     /// # Examples
