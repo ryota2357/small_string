@@ -3,7 +3,7 @@ use core::{error::Error, fmt};
 /// A possible error value if allocating or resizing a [`LeanString`] failed.
 ///
 /// [`LeanString`]: crate::LeanString
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ReserveError;
 
 impl fmt::Display for ReserveError {
