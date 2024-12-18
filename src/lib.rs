@@ -20,6 +20,9 @@ pub use repr::LastByte;
 mod errors;
 pub use errors::*;
 
+mod traits;
+pub use traits::*;
+
 mod features;
 
 #[repr(transparent)]
