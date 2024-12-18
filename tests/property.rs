@@ -4,6 +4,7 @@ use proptest::{prelude::*, property_test};
 #[property_test]
 fn create_from_str(input: String) {
     let str = input.as_str();
+
     let lean = LeanString::from(str);
     prop_assert_eq!(&lean, str);
     prop_assert_eq!(lean.len(), str.len());
@@ -13,6 +14,38 @@ fn create_from_str(input: String) {
     } else {
         prop_assert!(lean.is_heap_allocated());
     }
+}
+
+#[property_test]
+fn create_from_u8_bytes(input: Vec<u8>) {
+    let bytes = input.as_slice();
+
+    let lean = LeanString::from_utf8(bytes);
+    let string = String::from_utf8(bytes.to_vec());
+    prop_assert_eq!(lean.is_err(), string.is_err());
+    if let (Ok(lean), Ok(string)) = (lean, string) {
+        prop_assert_eq!(&lean, &string);
+    }
+
+    let lean = LeanString::from_utf8_lossy(bytes);
+    let string = String::from_utf8_lossy(bytes);
+    prop_assert_eq!(&lean, &string);
+}
+
+#[property_test]
+fn create_from_u16_bytes(input: Vec<u16>) {
+    let bytes = input.as_slice();
+
+    let lean = LeanString::from_utf16(bytes);
+    let string = String::from_utf16(bytes);
+    prop_assert_eq!(lean.is_err(), string.is_err());
+    if let (Ok(lean), Ok(string)) = (lean, string) {
+        prop_assert_eq!(&lean, &string);
+    }
+
+    let lean = LeanString::from_utf16_lossy(bytes);
+    let string = String::from_utf16_lossy(bytes);
+    prop_assert_eq!(&lean, &string);
 }
 
 #[property_test]

@@ -399,7 +399,10 @@ impl Repr {
     }
 
     pub(crate) fn insert_str(&mut self, idx: usize, string: &str) -> Result<(), ReserveError> {
-        assert!(self.as_str().is_char_boundary(idx));
+        assert!(
+            self.as_str().is_char_boundary(idx),
+            "index is not a char boundary or out of bounds (index: {idx})",
+        );
 
         let new_len = self.len().checked_add(string.len()).ok_or(ReserveError)?;
 

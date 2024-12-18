@@ -109,7 +109,7 @@ fn push_cow() {
 }
 
 #[test]
-fn push_from_static() {
+fn push_to_static() {
     let mut inline = LeanString::from_static_str("abcdefgh");
     assert_eq!(inline, "abcdefgh");
     assert_eq!(inline.len(), 8);
@@ -191,11 +191,14 @@ fn pop_cow() {
     s.push_str("hijklmnopqrstuvwxyz");
 
     let mut s2 = s.clone();
+    assert_eq!(s.as_ptr(), s2.as_ptr());
+
     assert_eq!(s2.pop(), Some('z'));
     assert_eq!(s2.len(), 25);
 
     // s is not changed
     assert_eq!(s, "abcdefghijklmnopqrstuvwxyz");
+    assert_ne!(s.as_ptr(), s2.as_ptr());
 }
 
 #[test]
@@ -227,6 +230,8 @@ fn pop_from_static_cow() {
     assert_eq!(static2, "0123456789abcdef");
     assert_eq!(static2.capacity(), static2.len());
     assert!(!static2.is_heap_allocated());
+
+    assert_eq!(static1.as_ptr(), static2.as_ptr());
 }
 
 #[test]
@@ -259,6 +264,7 @@ fn remove_cow() {
     let mut heap = LeanString::from("abcdefghijklmnopqrstuvwxyz");
     assert_eq!(heap.remove(0), 'a');
     let cloned = heap.clone();
+    assert_eq!(heap.as_ptr(), cloned.as_ptr());
     assert_eq!(heap.remove(24), 'z');
     assert_eq!(heap, "bcdefghijklmnopqrstuvwxy");
     assert_eq!(cloned, "bcdefghijklmnopqrstuvwxyz");
@@ -270,6 +276,93 @@ fn remove_fail() {
     let mut s = LeanString::from("Hello World!");
     assert_eq!(s.len(), 12);
     s.remove(12);
+}
+
+#[test]
+fn retain_f_apply_count() {
+    let mut inline = LeanString::from("012");
+    let mut count = 0;
+    inline.retain(|_| {
+        count += 1;
+        true
+    });
+    assert_eq!(count, 3);
+
+    let mut heap = LeanString::from("abcdefghijklmnopqrstuvwxyz");
+    let mut count = 0;
+    heap.retain(|_| {
+        count += 1;
+        true
+    });
+    assert_eq!(count, 26);
+}
+
+#[test]
+fn retain_cow() {
+    let mut heap = LeanString::from("qwer tyui opas dfgh jklz xcvb nm");
+    let cloned = heap.clone();
+    assert_eq!(heap.as_ptr(), cloned.as_ptr());
+    heap.retain(|c| c.is_alphabetic());
+    assert_eq!(heap, "qwertyuiopasdfghjklzxcvbnm");
+    assert_eq!(cloned, "qwer tyui opas dfgh jklz xcvb nm");
+
+    let mut static_ = LeanString::from_static_str("aBcDeFgHiJkLmNoPqRsTuVwXyZ");
+    let cloned = static_.clone();
+    static_.retain(|c| c.is_lowercase());
+    assert!(!cloned.is_heap_allocated());
+    assert_eq!(static_, "acegikmoqsuwy");
+    assert_eq!(cloned, "aBcDeFgHiJkLmNoPqRsTuVwXyZ");
+}
+
+#[test]
+fn insert() {
+    let mut s = LeanString::from("01234");
+    s.insert(3, 'a');
+    assert_eq!(s, "012a34");
+    assert_eq!(s.len(), 6);
+    assert_eq!(s.capacity(), INLINE_LIMIT);
+
+    s.insert(0, 'b');
+    assert_eq!(s, "b012a34");
+    assert_eq!(s.len(), 7);
+    assert_eq!(s.capacity(), INLINE_LIMIT);
+
+    s.insert(7, 'c');
+    assert_eq!(s, "b012a34c");
+    assert_eq!(s.len(), 8);
+    assert_eq!(s.capacity(), INLINE_LIMIT);
+
+    s.insert_str(8, "12345678");
+    assert_eq!(s, "b012a34c12345678");
+    assert_eq!(s.len(), 16);
+    if cfg!(target_pointer_width = "64") {
+        assert_eq!(s.capacity(), INLINE_LIMIT);
+        assert!(!s.is_heap_allocated());
+    }
+
+    s.insert_str(0, "ABCDEFGH");
+    assert_eq!(s, "ABCDEFGHb012a34c12345678");
+
+    s.insert(20, '.');
+    assert_eq!(s, "ABCDEFGHb012a34c1234.5678");
+}
+
+#[test]
+fn insert_to_static() {
+    let mut static_ = LeanString::from_static_str("01234567890123456789");
+    let cloned = static_.clone();
+    static_.insert(10, 'a');
+    assert_eq!(static_, "0123456789a0123456789");
+    assert!(static_.is_heap_allocated());
+    assert_eq!(cloned, "01234567890123456789");
+    assert!(!cloned.is_heap_allocated());
+}
+
+#[test]
+#[should_panic(expected = "index is not a char boundary or out of bounds (index: 7)")]
+fn insert_fail() {
+    let mut s = LeanString::from("012345");
+    s.insert(7, 'a');
 }
 
 #[test]
