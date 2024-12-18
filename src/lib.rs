@@ -116,7 +116,7 @@ impl LeanString {
         Repr::with_capacity(capacity).map(LeanString)
     }
 
-    /// Return the length of the string in bytes, not [`char`] or graphemes.
+    /// Returns the length of the string in bytes, not [`char`] or graphemes.
     ///
     /// # Examples
     ///
