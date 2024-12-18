@@ -40,8 +40,8 @@ jobs:
       - name: Test
         run: |
           if [ "${{ matrix.build_type }}" = "release" ]; then
-            flag="--release"
+            btype="--release"
           fi
-          cargo test $flag
-          cargo test $flag --all-features
-          RUSTFLAGS="--cfg loom" cargo test --test loom $flag
+          cargo test $btype
+          cargo test $btype --all-features
+          RUSTFLAGS="--cfg loom" cargo test --test loom $btype --features loom -- --test-threads=1
