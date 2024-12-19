@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Lint check
+        run: |
+          cargo check --all-features
+          cargo clippy --all-features -- -D warnings
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        opt: ["", "--release"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test (default)
+        run: cargo test ${{ matrix.opt }}
+
+      - name: Test (no-default-features)
+        run: cargo test ${{ matrix.opt }} --no-default-features
+
+      - name: Test (all-features)
+        run: cargo test ${{ matrix.opt }} --all-features
+
+      - name: Test (Loom)
+        run: RUSTFLAGS="--cfg loom" cargo test --test loom ${{ matrix.opt }} --features loom -- --test-threads=1
+
+  miri:
+    name: Miri (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: 64-bit LE
+            target: x86_64-unknown-linux-gnu
+          - name: 64-bit BE
+            target: powerpc64-unknown-linux-gnu
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Miri
+        run: |
+          rustup toolchain install nightly --profile minimal
+          rustup +nightly component add miri
+
+      - name: Test (default)
+        run: cargo +nightly miri test --target ${{ matrix.target }}
+
+      - name: Test (no-default-features)
+        run: cargo +nightly miri test --target ${{ matrix.target }} --no-default-features
+
+      - name: Test (all-features)
+        run: cargo +nightly miri test --target ${{ matrix.target }} --all-features
