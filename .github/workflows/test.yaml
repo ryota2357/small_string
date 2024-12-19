@@ -32,23 +32,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        build_type: [debug, release]
+        profile: [test, release]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set envrionment variable
-        run: |
-          if [ "${{ matrix.build_type }}" = "release" ]; then
-            export btype="--release"
-          else
-            export btype=""
-          fi
-
       - name: Test
         run: |
-          cargo test $btype
-          cargo test $btype --all-features
+          cargo test --profile ${{ matrix.profile }}
+          cargo test --profile ${{ matrix.profile }} --all-features
 
       - name: Test (Loom)
-        run: RUSTFLAGS="--cfg loom" cargo test --test loom $btype --features loom -- --test-threads=1
+        run: RUSTFLAGS="--cfg loom" cargo test --test loom --profile ${{ matrix.profile }} --features loom -- --test-threads=1
