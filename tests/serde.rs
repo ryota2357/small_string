@@ -51,6 +51,7 @@ fn test_roundtrip() {
 }
 
 #[property_test]
+#[cfg_attr(miri, ignore)]
 fn proptest_roundtrip(name: String, phones: Vec<String>, address: Option<String>) {
     let std =
         PersonString { name: name.clone(), phones: phones.to_vec(), address: address.clone() };

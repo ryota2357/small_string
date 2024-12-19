@@ -2,6 +2,7 @@ use lean_string::LeanString;
 use proptest::{prelude::*, property_test};
 
 #[property_test]
+#[cfg_attr(miri, ignore)]
 fn create_from_str(input: String) {
     let str = input.as_str();
 
@@ -17,6 +18,7 @@ fn create_from_str(input: String) {
 }
 
 #[property_test]
+#[cfg_attr(miri, ignore)]
 fn create_from_u8_bytes(input: Vec<u8>) {
     let bytes = input.as_slice();
 
@@ -33,6 +35,7 @@ fn create_from_u8_bytes(input: Vec<u8>) {
 }
 
 #[property_test]
+#[cfg_attr(miri, ignore)]
 fn create_from_u16_bytes(input: Vec<u16>) {
     let bytes = input.as_slice();
 
@@ -49,12 +52,14 @@ fn create_from_u16_bytes(input: Vec<u16>) {
 }
 
 #[property_test]
+#[cfg_attr(miri, ignore)]
 fn collect_from_chars(input: String) {
     let lean = input.chars().collect::<LeanString>();
     prop_assert_eq!(&lean, &input);
 }
 
 #[property_test]
+#[cfg_attr(miri, ignore)]
 fn collect_from_strings(input: Vec<String>) {
     let lean = input.clone().into_iter().collect::<LeanString>();
     let string = input.into_iter().collect::<String>();
