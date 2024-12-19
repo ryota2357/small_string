@@ -372,28 +372,42 @@ impl Repr {
         // We will modify the buffer, we need to make sure it.
         self.ensure_modifiable()?;
 
-        let str = unsafe { self.as_str_mut() };
-        let mut dst_idx = 0;
-        let mut src_idx = 0;
+        struct SetLenOnDrop<'a> {
+            self_: &'a mut Repr,
+            src_idx: usize,
+            dst_idx: usize,
+        }
 
-        while let Some(ch) = str[src_idx..].chars().next() {
+        let mut g = SetLenOnDrop {
+            self_: self,
+            src_idx: 0,
+            dst_idx: 0,
+        };
+        let str = unsafe { g.self_.as_str_mut() };
+
+        while let Some(ch) = str[g.src_idx..].chars().next() {
             let ch_len = ch.len_utf8();
             if predicate(ch) {
                 // SAFETY:`src_idx` and `dst_idx` are valid indices, and don't split a char.
                 unsafe {
-                    let src = str.as_mut_ptr().add(src_idx);
-                    let dst = str.as_mut_ptr().add(dst_idx);
+                    let src = str.as_mut_ptr().add(g.src_idx);
+                    let dst = str.as_mut_ptr().add(g.dst_idx);
                     ptr::copy(src, dst, ch_len);
                 }
-                dst_idx += ch_len;
+                g.dst_idx += ch_len;
             }
-            src_idx += ch_len;
+            g.src_idx += ch_len;
         }
 
-        // SAFETY:
-        // - `dst_idx <= src_idx`, and `src_idx <= len`, so `dst_idx <= len`.
-        // - `dst_idx` doesn't split a char because it is a sum of `ch_len`.
-        unsafe { self.set_len(dst_idx) }
+        impl Drop for SetLenOnDrop<'_> {
+            fn drop(&mut self) {
+                // SAFETY:
+                // - `dst_idx <= src_idx`, and `src_idx <= len`, so `dst_idx <= len`.
+                // - `dst_idx` doesn't split a char because it is a sum of `ch_len`.
+                unsafe { self.self_.set_len(self.dst_idx) }
+            }
+        }
+        drop(g);
 
         Ok(())
     }
