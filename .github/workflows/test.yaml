@@ -40,9 +40,9 @@ jobs:
       - name: Set envrionment variable
         run: |
           if [ "${{ matrix.build_type }}" = "release" ]; then
-            btype="--release"
+            export btype="--release"
           else
-            btype=""
+            export btype=""
           fi
 
       - name: Test
