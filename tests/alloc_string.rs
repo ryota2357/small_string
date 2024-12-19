@@ -389,7 +389,7 @@ fn remove() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "index is not a char boundary or out of bounds (index: 1)")]
 fn remove_bad() {
     "ศ".to_lean_string().remove(1);
 }
@@ -510,13 +510,13 @@ fn insert() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "index is not a char boundary or out of bounds (index: 1)")]
 fn insert_bad1() {
     "".to_lean_string().insert(1, 't');
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "index is not a char boundary or out of bounds (index: 1)")]
 fn insert_bad2() {
     "ệ".to_lean_string().insert(1, 't');
 }
