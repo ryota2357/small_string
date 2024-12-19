@@ -223,22 +223,14 @@ impl HeapBuffer {
         // - allocation is non-null.
         // - allocation size is larger than or equal to the size of Header.
         unsafe {
-            ptr::write(
-                allocation.cast(),
-                Header {
-                    count: AtomicUsize::new(1),
-                    capacity,
-                },
-            );
+            ptr::write(allocation.cast(), Header { count: AtomicUsize::new(1), capacity });
             let ptr = allocation.add(HeapBuffer::header_offset());
             Ok(NonNull::new_unchecked(ptr))
         }
     }
 
     fn layout_from_capacity(capacity: usize) -> Result<Layout, ReserveError> {
-        let alloc_size = size_of::<Header>()
-            .checked_add(capacity)
-            .ok_or(ReserveError)?;
+        let alloc_size = size_of::<Header>().checked_add(capacity).ok_or(ReserveError)?;
         let align = HeapBuffer::align();
         Layout::from_size_align(alloc_size, align).map_err(
             #[cold]

@@ -378,11 +378,7 @@ impl Repr {
             dst_idx: usize,
         }
 
-        let mut g = SetLenOnDrop {
-            self_: self,
-            src_idx: 0,
-            dst_idx: 0,
-        };
+        let mut g = SetLenOnDrop { self_: self, src_idx: 0, dst_idx: 0 };
         let str = unsafe { g.self_.as_str_mut() };
 
         while let Some(ch) = str[g.src_idx..].chars().next() {
@@ -432,11 +428,7 @@ impl Repr {
         unsafe {
             // first move the tail to the new back
             let data = self.as_slice_mut().as_mut_ptr();
-            ptr::copy(
-                data.add(idx),
-                data.add(idx + string.len()),
-                new_len - idx - string.len(),
-            );
+            ptr::copy(data.add(idx), data.add(idx + string.len()), new_len - idx - string.len());
 
             // then insert the new bytes
             ptr::copy_nonoverlapping(string.as_ptr(), data.add(idx), string.len());

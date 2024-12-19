@@ -39,10 +39,7 @@ fn test_from_str() {
 #[test]
 fn test_from_cow_str() {
     assert_eq!(LeanString::from(Cow::Borrowed("string")), "string");
-    assert_eq!(
-        LeanString::from(Cow::Owned(String::from("string"))),
-        "string"
-    );
+    assert_eq!(LeanString::from(Cow::Owned(String::from("string"))), "string");
 }
 
 #[test]
@@ -54,16 +51,10 @@ fn test_unsized_to_string() {
 #[test]
 fn test_from_utf8() {
     let xs = b"hello".to_vec();
-    assert_eq!(
-        LeanString::from_utf8(&xs).unwrap(),
-        LeanString::from("hello")
-    );
+    assert_eq!(LeanString::from_utf8(&xs).unwrap(), LeanString::from("hello"));
 
     let xs = "ศไทย中华Việt Nam".as_bytes().to_vec();
-    assert_eq!(
-        LeanString::from_utf8(&xs).unwrap(),
-        LeanString::from("ศไทย中华Việt Nam")
-    );
+    assert_eq!(LeanString::from_utf8(&xs).unwrap(), LeanString::from("ศไทย中华Việt Nam"));
 
     let xs = b"hello\xFF".to_vec();
     let err = LeanString::from_utf8(&xs).unwrap_err();
@@ -79,40 +70,22 @@ fn test_from_utf8_lossy() {
     assert_eq!(LeanString::from_utf8_lossy(s), "ศไทย中华Việt Nam");
 
     let xs = b"Hello\xC2 There\xFF Goodbye";
-    assert_eq!(
-        LeanString::from_utf8_lossy(xs),
-        "Hello\u{FFFD} There\u{FFFD} Goodbye"
-    );
+    assert_eq!(LeanString::from_utf8_lossy(xs), "Hello\u{FFFD} There\u{FFFD} Goodbye");
 
     let xs = b"Hello\xC0\x80 There\xE6\x83 Goodbye";
-    assert_eq!(
-        LeanString::from_utf8_lossy(xs),
-        "Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye"
-    );
+    assert_eq!(LeanString::from_utf8_lossy(xs), "Hello\u{FFFD}\u{FFFD} There\u{FFFD} Goodbye");
 
     let xs = b"\xF5foo\xF5\x80bar";
-    assert_eq!(
-        LeanString::from_utf8_lossy(xs),
-        "\u{FFFD}foo\u{FFFD}\u{FFFD}bar"
-    );
+    assert_eq!(LeanString::from_utf8_lossy(xs), "\u{FFFD}foo\u{FFFD}\u{FFFD}bar");
 
     let xs = b"\xF1foo\xF1\x80bar\xF1\x80\x80baz";
-    assert_eq!(
-        LeanString::from_utf8_lossy(xs),
-        "\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz"
-    );
+    assert_eq!(LeanString::from_utf8_lossy(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}baz");
 
     let xs = b"\xF4foo\xF4\x80bar\xF4\xBFbaz";
-    assert_eq!(
-        LeanString::from_utf8_lossy(xs),
-        "\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz"
-    );
+    assert_eq!(LeanString::from_utf8_lossy(xs), "\u{FFFD}foo\u{FFFD}bar\u{FFFD}\u{FFFD}baz");
 
     let xs = b"\xF0\x80\x80\x80foo\xF0\x90\x80\x80bar";
-    assert_eq!(
-        LeanString::from_utf8_lossy(xs),
-        "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar"
-    );
+    assert_eq!(LeanString::from_utf8_lossy(xs), "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}foo\u{10000}bar");
 
     // surrogates
     let xs = b"\xED\xA0\x80foo\xED\xBF\xBFbar";
@@ -245,15 +218,9 @@ fn test_utf16_invalid() {
 fn test_from_utf16_lossy() {
     // completely positive cases tested above.
     // lead + eof
-    assert_eq!(
-        LeanString::from_utf16_lossy(&[0xD800]),
-        String::from("\u{FFFD}")
-    );
+    assert_eq!(LeanString::from_utf16_lossy(&[0xD800]), String::from("\u{FFFD}"));
     // lead + lead
-    assert_eq!(
-        LeanString::from_utf16_lossy(&[0xD800, 0xD800]),
-        "\u{FFFD}\u{FFFD}"
-    );
+    assert_eq!(LeanString::from_utf16_lossy(&[0xD800, 0xD800]), "\u{FFFD}\u{FFFD}");
 
     // isolated trail
     assert_eq!(LeanString::from_utf16_lossy(&[0x0061, 0xDC00]), "a\u{FFFD}");

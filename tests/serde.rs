@@ -52,11 +52,8 @@ fn test_roundtrip() {
 
 #[property_test]
 fn proptest_roundtrip(name: String, phones: Vec<String>, address: Option<String>) {
-    let std = PersonString {
-        name: name.clone(),
-        phones: phones.to_vec(),
-        address: address.clone(),
-    };
+    let std =
+        PersonString { name: name.clone(), phones: phones.to_vec(), address: address.clone() };
     let compact = PersonLeanString {
         name: name.into(),
         phones: phones.iter().map(LeanString::from).collect(),
