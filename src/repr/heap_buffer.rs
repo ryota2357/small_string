@@ -1,6 +1,6 @@
 use super::*;
+use alloc::alloc::{alloc, dealloc, realloc};
 use core::{alloc::Layout, hint, ptr, ptr::NonNull};
-use std::alloc;
 
 #[cfg(not(loom))]
 use core::sync::atomic::AtomicUsize;
@@ -130,7 +130,7 @@ impl HeapBuffer {
         // - `new_alloc_size` is greater than zero.
         // - `new_alloc_size` is ensured not to overflow when rounded up to the nearest multiple of
         //    alignment by `ALLOC_LIMIT`.
-        let allocation = unsafe { alloc::realloc(self.allocation(), cur_layout, new_alloc_size) };
+        let allocation = unsafe { realloc(self.allocation(), cur_layout, new_alloc_size) };
         if allocation.is_null() {
             return Err(ReserveError);
         }
@@ -168,7 +168,7 @@ impl HeapBuffer {
                 unsafe { hint::unreachable_unchecked() }
             }
         };
-        alloc::dealloc(self.allocation(), layout);
+        dealloc(self.allocation(), layout);
     }
 
     pub(super) fn is_unique(&self) -> bool {
@@ -214,7 +214,7 @@ impl HeapBuffer {
         let layout = HeapBuffer::layout_from_capacity(capacity)?;
 
         // SAFETY: layout is non-zero.
-        let allocation = unsafe { alloc::alloc(layout) };
+        let allocation = unsafe { alloc(layout) };
         if allocation.is_null() {
             return Err(ReserveError);
         }

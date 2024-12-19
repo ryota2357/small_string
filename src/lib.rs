@@ -1,5 +1,12 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![no_std]
+
+#[macro_use] //  used by ToLeanString impls
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 use core::{
     borrow::Borrow,
@@ -9,7 +16,11 @@ use core::{
     str,
     str::FromStr,
 };
-use std::{borrow::Cow, ffi::OsStr};
+
+use alloc::{borrow::Cow, boxed::Box, string::String};
+
+#[cfg(feature = "std")]
+use std::ffi::OsStr;
 
 mod repr;
 use repr::Repr;
@@ -837,6 +848,7 @@ impl AsRef<str> for LeanString {
     }
 }
 
+#[cfg(feature = "std")]
 impl AsRef<OsStr> for LeanString {
     #[inline]
     fn as_ref(&self) -> &OsStr {

@@ -8,9 +8,11 @@ repository = "https://github.com/ryota2357/lean_string"
 readme = "README.md"
 license = "MIT"
 keywords = ["string", "sso", "cow"]
+categories = ["data-structures", "no-std"]
 
 [features]
-default = []
+default = ["std"]
+std = []
 last_byte = []
 
 [dependencies]
