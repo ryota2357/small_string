@@ -46,7 +46,7 @@ jobs:
           fi
 
       - name: Test
-        run:
+        run: |
           cargo test $btype
           cargo test $btype --all-features
 
