@@ -119,7 +119,7 @@ impl HeapBuffer {
         };
 
         const ALLOC_LIMIT: usize = (isize::MAX as usize + 1) - HeapBuffer::align();
-        let new_alloc_size = size_of::<Header>() + new_capacity;
+        let new_alloc_size = size_of::<Header>().saturating_add(new_capacity);
         if new_alloc_size > ALLOC_LIMIT {
             return Err(ReserveError);
         }
@@ -236,7 +236,9 @@ impl HeapBuffer {
     }
 
     fn layout_from_capacity(capacity: usize) -> Result<Layout, ReserveError> {
-        let alloc_size = size_of::<Header>() + capacity;
+        let alloc_size = size_of::<Header>()
+            .checked_add(capacity)
+            .ok_or(ReserveError)?;
         let align = HeapBuffer::align();
         Layout::from_size_align(alloc_size, align).map_err(
             #[cold]
