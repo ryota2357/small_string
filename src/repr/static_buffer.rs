@@ -14,10 +14,8 @@ impl StaticBuffer {
         bytes[USIZE_SIZE - 1] = 0;
         usize::from_le_bytes(bytes)
     };
-    const LENGTH_MASK: usize = Self::MAX_LENGTH;
 
     const TAG: usize = {
-        const USIZE_SIZE: usize = size_of::<usize>();
         let mut bytes = [0; USIZE_SIZE];
         bytes[USIZE_SIZE - 1] = LastByte::StaticMarker as u8;
         usize::from_ne_bytes(bytes)
@@ -38,7 +36,9 @@ impl StaticBuffer {
     }
 
     pub(super) fn len(&self) -> usize {
-        self.len & Self::LENGTH_MASK
+        let len = self.len ^ Self::TAG;
+        let bytes = len.to_ne_bytes();
+        usize::from_le_bytes(bytes)
     }
 
     /// # Safety

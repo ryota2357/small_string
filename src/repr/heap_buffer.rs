@@ -326,7 +326,7 @@ mod internal {
         pub(super) fn as_usize(self) -> usize {
             let size = self.0 ^ Self::TAG;
             let bytes = size.to_ne_bytes();
-            usize::from_ne_bytes(bytes)
+            usize::from_le_bytes(bytes)
         }
     }
 }
