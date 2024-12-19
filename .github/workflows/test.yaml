@@ -34,14 +34,21 @@ jobs:
         os: [ubuntu-latest]
         build_type: [debug, release]
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Test
+      - name: Set envrionment variable
         run: |
           if [ "${{ matrix.build_type }}" = "release" ]; then
             btype="--release"
+          else
+            btype=""
           fi
+
+      - name: Test
+        run:
           cargo test $btype
           cargo test $btype --all-features
-          RUSTFLAGS="--cfg loom" cargo test --test loom $btype --features loom -- --test-threads=1
+
+      - name: Test (Loom)
+        run: RUSTFLAGS="--cfg loom" cargo test --test loom $btype --features loom -- --test-threads=1
