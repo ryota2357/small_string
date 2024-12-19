@@ -378,18 +378,24 @@ impl Repr {
             dst_idx: usize,
         }
 
+        let len = self.len();
         let mut g = SetLenOnDrop { self_: self, src_idx: 0, dst_idx: 0 };
         let str = unsafe { g.self_.as_str_mut() };
 
-        while let Some(ch) = str[g.src_idx..].chars().next() {
+        while g.src_idx < len {
+            // SAFETY: `g.src_idx` is positive-or-zero and less that len so the `get_unchecked` is
+            // in bound. `self` is valid UTF-8 like string and the returned slice starts at a
+            // unicode code point so the `Chars` always return one character.
+            let ch = unsafe { str.get_unchecked(g.src_idx..len).chars().next().unwrap_unchecked() };
             let ch_len = ch.len_utf8();
+
             if predicate(ch) {
-                // SAFETY:`src_idx` and `dst_idx` are valid indices, and don't split a char.
-                unsafe {
-                    let src = str.as_mut_ptr().add(g.src_idx);
-                    let dst = str.as_mut_ptr().add(g.dst_idx);
-                    ptr::copy(src, dst, ch_len);
-                }
+                // SAFETY: `g.dst_idx` represents a valid code points, don't split a char.
+                let dst_slice = unsafe {
+                    let dst_ptr = str.as_mut_ptr().add(g.dst_idx);
+                    slice::from_raw_parts_mut(dst_ptr, ch_len)
+                };
+                ch.encode_utf8(dst_slice);
                 g.dst_idx += ch_len;
             }
             g.src_idx += ch_len;
