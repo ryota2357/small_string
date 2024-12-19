@@ -44,3 +44,13 @@ jobs:
 
       - name: Test (Loom)
         run: RUSTFLAGS="--cfg loom" cargo test --test loom --profile ${{ matrix.profile }} --features loom -- --test-threads=1
+
+      - name: Install Miri
+        run: |
+          rustup install nightly --profile minimal
+          rustup +nightly component add miri
+
+      - name: Test (Miri)
+        run: |
+          cargo +nightly miri test --profile ${{ matrix.profile }}
+          cargo +nightly miri test --profile ${{ matrix.profile }} --all-features
