@@ -121,8 +121,8 @@ impl Repr {
         }
     }
 
-    pub fn as_str(&self) -> &str {
     #[inline]
+    pub(crate) fn as_str(&self) -> &str {
         // SAFETY: A `Repr` contains valid UTF-8
         unsafe { str::from_utf8_unchecked(self.as_bytes()) }
     }
@@ -205,8 +205,8 @@ impl Repr {
         }
     }
 
-    pub fn shrink_to(&mut self, min_capacity: usize) -> Result<(), ReserveError> {
     #[inline]
+    pub(crate) fn shrink_to(&mut self, min_capacity: usize) -> Result<(), ReserveError> {
         // If the buffer is not heap allocated, we can't shrink it.
         if !self.is_heap_buffer() {
             return Ok(());
@@ -382,8 +382,11 @@ impl Repr {
         Ok(ch)
     }
 
-    pub fn retain(&mut self, mut predicate: impl FnMut(char) -> bool) -> Result<(), ReserveError> {
     #[inline]
+    pub(crate) fn retain(
+        &mut self,
+        mut predicate: impl FnMut(char) -> bool,
+    ) -> Result<(), ReserveError> {
         // We will modify the buffer, we need to make sure it.
         self.ensure_modifiable()?;
 
