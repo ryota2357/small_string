@@ -46,7 +46,7 @@ assert_eq!(cloned, "This is a not long but can't store inlined");
 assert_eq!(large, cloned + "!");
 ```
 
-## Similar String Types
+## Comparison
 
 | Name                                                                                        | Size     | Inline   | `&'static str` | Notes                                          |
 | ------------------------------------------------------------------------------------------- | -------- | -------- | -------------- | ---------------------------------------------- |
