@@ -61,6 +61,7 @@ impl LeanString {
     /// assert!(s.is_empty());
     /// assert!(!s.is_heap_allocated());
     /// ```
+    #[inline]
     pub const fn new() -> Self {
         LeanString(Repr::new())
     }
@@ -76,6 +77,7 @@ impl LeanString {
     /// assert_eq!(s.len(), 29);
     /// assert!(!s.is_heap_allocated());
     /// ```
+    #[inline]
     pub const fn from_static_str(text: &'static str) -> Self {
         match Repr::from_static_str(text) {
             Ok(repr) => LeanString(repr),
@@ -118,6 +120,7 @@ impl LeanString {
     /// assert_eq!(s.capacity(), 100);
     /// assert!(s.is_heap_allocated());
     /// ```
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         LeanString::try_with_capacity(capacity).unwrap_with_msg()
     }
@@ -126,6 +129,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::with_capacity()`].
+    #[inline]
     pub fn try_with_capacity(capacity: usize) -> Result<Self, ReserveError> {
         Repr::with_capacity(capacity).map(LeanString)
     }
@@ -155,6 +159,7 @@ impl LeanString {
     ///
     /// assert!(result.is_err());
     /// ```
+    #[inline]
     pub fn from_utf8(buf: &[u8]) -> Result<Self, str::Utf8Error> {
         let str = str::from_utf8(buf)?;
         Ok(LeanString::from(str))
@@ -174,6 +179,7 @@ impl LeanString {
     ///
     /// assert_eq!(string, "Hello �World");
     /// ```
+    #[inline]
     pub fn from_utf8_lossy(buf: &[u8]) -> Self {
         let mut ret = LeanString::with_capacity(buf.len());
         for chunk in buf.utf8_chunks() {
@@ -192,6 +198,7 @@ impl LeanString {
     ///
     /// This function is unsafe because it does not check that the bytes passed to it are valid
     /// UTF-8. If this constraint is violated, it may cause memory unsafety issues.
+    #[inline]
     pub unsafe fn from_utf8_unchecked(buf: &[u8]) -> Self {
         let str = unsafe { str::from_utf8_unchecked(buf) };
         LeanString::from(str)
@@ -217,6 +224,7 @@ impl LeanString {
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075, 0xD800, 0x0069, 0x0063];
     /// assert!(String::from_utf16(v).is_err());
     /// ```
+    #[inline]
     pub fn from_utf16(buf: &[u16]) -> Result<Self, FromUtf16Error> {
         let mut ret = LeanString::with_capacity(buf.len());
         for c in char::decode_utf16(buf.iter().copied()) {
@@ -239,6 +247,7 @@ impl LeanString {
     /// let v = &[0xD834, 0xDD1E, 0x006d, 0x0075, 0x0073, 0xDD1E, 0x0069, 0x0063, 0xD834];
     /// assert_eq!(LeanString::from_utf16_lossy(v), "𝄞mus\u{FFFD}ic\u{FFFD}");
     /// ```
+    #[inline]
     pub fn from_utf16_lossy(buf: &[u16]) -> Self {
         char::decode_utf16(buf.iter().copied())
             .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
@@ -258,6 +267,7 @@ impl LeanString {
     /// assert_eq!(fancy_f.len(), 4);
     /// assert_eq!(fancy_f.chars().count(), 3);
     /// ```
+    #[inline]
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -274,6 +284,7 @@ impl LeanString {
     /// s.push('a');
     /// assert!(!s.is_empty());
     /// ```
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -301,6 +312,7 @@ impl LeanString {
     /// let s = LeanString::with_capacity(100);
     /// assert_eq!(s.capacity(), 100);
     /// ```
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.0.capacity()
     }
@@ -314,6 +326,7 @@ impl LeanString {
     /// let s = LeanString::from("foo");
     /// assert_eq!(s.as_str(), "foo");
     /// ```
+    #[inline]
     pub fn as_str(&self) -> &str {
         self.0.as_str()
     }
@@ -327,6 +340,7 @@ impl LeanString {
     /// let s = LeanString::from("hello");
     /// assert_eq!(&[104, 101, 108, 108, 111], s.as_bytes());
     /// ```
+    #[inline]
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
@@ -363,6 +377,7 @@ impl LeanString {
     /// assert!(s.capacity() >= s.len() + 100);
     /// assert!(s.is_heap_allocated());
     /// ```
+    #[inline]
     pub fn reserve(&mut self, additional: usize) {
         self.try_reserve(additional).unwrap_with_msg()
     }
@@ -371,6 +386,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::reserve()`].
+    #[inline]
     pub fn try_reserve(&mut self, additional: usize) -> Result<(), ReserveError> {
         self.0.reserve(additional)
     }
@@ -417,6 +433,7 @@ impl LeanString {
     /// s.shrink_to_fit();
     /// assert_eq!(s.capacity(), s.len());
     /// ```
+    #[inline]
     pub fn shrink_to_fit(&mut self) {
         self.try_shrink_to_fit().unwrap_with_msg()
     }
@@ -425,6 +442,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::shrink_to_fit()`].
+    #[inline]
     pub fn try_shrink_to_fit(&mut self) -> Result<(), ReserveError> {
         self.0.shrink_to(0)
     }
@@ -461,6 +479,7 @@ impl LeanString {
     /// s.shrink_to(10);
     /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
     /// ```
+    #[inline]
     pub fn shrink_to(&mut self, min_capacity: usize) {
         self.try_shrink_to(min_capacity).unwrap_with_msg()
     }
@@ -469,6 +488,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::shrink_to()`].
+    #[inline]
     pub fn try_shrink_to(&mut self, min_capacity: usize) -> Result<(), ReserveError> {
         self.0.shrink_to(min_capacity)
     }
@@ -490,6 +510,7 @@ impl LeanString {
     /// s.push('o');
     /// assert_eq!("foo", s);
     /// ```
+    #[inline]
     pub fn push(&mut self, ch: char) {
         self.try_push(ch).unwrap_with_msg()
     }
@@ -498,6 +519,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::push()`].
+    #[inline]
     pub fn try_push(&mut self, ch: char) -> Result<(), ReserveError> {
         self.0.push_str(ch.encode_utf8(&mut [0; 4]))
     }
@@ -522,6 +544,7 @@ impl LeanString {
     ///
     /// assert_eq!(s.pop(), None);
     /// ```
+    #[inline]
     pub fn pop(&mut self) -> Option<char> {
         self.try_pop().unwrap_with_msg()
     }
@@ -530,6 +553,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::pop()`].
+    #[inline]
     pub fn try_pop(&mut self) -> Result<Option<char>, ReserveError> {
         self.0.pop()
     }
@@ -551,6 +575,7 @@ impl LeanString {
     ///
     /// assert_eq!("foobar", s);
     /// ```
+    #[inline]
     pub fn push_str(&mut self, string: &str) {
         self.try_push_str(string).unwrap_with_msg()
     }
@@ -559,6 +584,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, or the `capacity` is too large, but
     /// return an [`ReserveError`]. Otherwise it behaves the same as [`LeanString::push_str()`].
+    #[inline]
     pub fn try_push_str(&mut self, string: &str) -> Result<(), ReserveError> {
         self.0.push_str(string)
     }
@@ -600,6 +626,7 @@ impl LeanString {
     /// let mut c = LeanString::from("🦄");
     /// c.remove(1);
     /// ```
+    #[inline]
     pub fn remove(&mut self, idx: usize) -> char {
         self.try_remove(idx).unwrap_with_msg()
     }
@@ -608,6 +635,7 @@ impl LeanString {
     ///
     /// This method won't panic if the system is out-of-memory, but return an [`ReserveError`].
     /// Otherwise it behaves the same as [`LeanString::remove()`].
+    #[inline]
     pub fn try_remove(&mut self, idx: usize) -> Result<char, ReserveError> {
         self.0.remove(idx)
     }
@@ -633,6 +661,7 @@ impl LeanString {
     ///
     /// assert_eq!(s, "b𝄞€");
     /// ```
+    #[inline]
     pub fn retain(&mut self, predicate: impl FnMut(char) -> bool) {
         self.try_retain(predicate).unwrap_with_msg()
     }
@@ -640,6 +669,7 @@ impl LeanString {
     /// Fallible version of [`LeanString::retain()`].
     ///
     /// This method won't panic if the system is out-of-memory, but return an [`ReserveError`].
+    #[inline]
     pub fn try_retain(&mut self, predicate: impl FnMut(char) -> bool) -> Result<(), ReserveError> {
         self.0.retain(predicate)
     }
@@ -670,6 +700,7 @@ impl LeanString {
     /// s.insert(5, ',');
     /// assert_eq!("Hello, world!", s);
     /// ```
+    #[inline]
     pub fn insert(&mut self, idx: usize, ch: char) {
         self.try_insert(idx, ch).unwrap_with_msg()
     }
@@ -684,6 +715,7 @@ impl LeanString {
     ///
     /// This method still panics if the `idx` is larger than the [`LeanString`]'s length, or if it
     /// does not lie on a [`char`] boundary.
+    #[inline]
     pub fn try_insert(&mut self, idx: usize, ch: char) -> Result<(), ReserveError> {
         self.0.insert_str(idx, ch.encode_utf8(&mut [0; 4]))
     }
@@ -708,6 +740,7 @@ impl LeanString {
     /// s.insert_str(0, "foo");
     /// assert_eq!("foobar", s);
     /// ```
+    #[inline]
     pub fn insert_str(&mut self, idx: usize, string: &str) {
         self.try_insert_str(idx, string).unwrap_with_msg()
     }
@@ -722,6 +755,7 @@ impl LeanString {
     ///
     /// This method still panics if the `idx` is larger than the [`LeanString`]'s length, or if it
     /// does not lie on a [`char`] boundary.
+    #[inline]
     pub fn try_insert_str(&mut self, idx: usize, string: &str) -> Result<(), ReserveError> {
         self.0.insert_str(idx, string)
     }
@@ -759,6 +793,7 @@ impl LeanString {
     /// assert_eq!(s, "");
     /// assert_eq!(s.capacity(), 2 * size_of::<usize>());
     /// ```
+    #[inline]
     pub fn clear(&mut self) {
         if self.0.is_unique() {
             // SAFETY:
@@ -789,6 +824,7 @@ impl LeanString {
     /// let s = LeanString::from("More than 2 * size_of::<usize>() bytes is heap-allocated");
     /// assert!(s.is_heap_allocated());
     /// ```
+    #[inline]
     pub fn is_heap_allocated(&self) -> bool {
         self.0.is_heap_buffer()
     }
@@ -817,6 +853,7 @@ unsafe impl Send for LeanString {}
 unsafe impl Sync for LeanString {}
 
 impl Default for LeanString {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -824,6 +861,8 @@ impl Default for LeanString {
 
 impl Deref for LeanString {
     type Target = str;
+
+    #[inline]
     fn deref(&self) -> &str {
         self.as_str()
     }
@@ -1006,6 +1045,7 @@ impl From<Box<str>> for LeanString {
 }
 
 impl From<&LeanString> for LeanString {
+    #[inline]
     fn from(value: &LeanString) -> Self {
         value.clone()
     }
@@ -1158,6 +1198,7 @@ impl Extend<LeanString> for String {
 }
 
 impl fmt::Write for LeanString {
+    #[inline]
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_str(s);
         Ok(())
@@ -1166,6 +1207,8 @@ impl fmt::Write for LeanString {
 
 impl Add<&str> for LeanString {
     type Output = Self;
+
+    #[inline]
     fn add(mut self, rhs: &str) -> Self::Output {
         self.push_str(rhs);
         self
@@ -1173,6 +1216,7 @@ impl Add<&str> for LeanString {
 }
 
 impl AddAssign<&str> for LeanString {
+    #[inline]
     fn add_assign(&mut self, rhs: &str) {
         self.push_str(rhs);
     }

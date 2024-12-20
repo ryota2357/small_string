@@ -38,10 +38,12 @@ fn _static_assert() {
 }
 
 impl Repr {
+    #[inline]
     pub(crate) const fn new() -> Self {
         Repr::from_inline(InlineBuffer::empty())
     }
 
+    #[inline]
     pub(crate) fn from_str(text: &str) -> Result<Self, ReserveError> {
         if text.len() <= MAX_INLINE_SIZE {
             // SAFETY: `text.len()` is less than or equal to `MAX_INLINE_SIZE`
@@ -51,6 +53,7 @@ impl Repr {
         }
     }
 
+    #[inline]
     pub(crate) const fn from_static_str(text: &'static str) -> Result<Self, ReserveError> {
         if text.len() <= MAX_INLINE_SIZE {
             // SAFETY: `text.len()` is less than or equal to `MAX_INLINE_SIZE`
@@ -64,6 +67,7 @@ impl Repr {
         }
     }
 
+    #[inline]
     pub(crate) fn with_capacity(capacity: usize) -> Result<Self, ReserveError> {
         if capacity <= MAX_INLINE_SIZE {
             Ok(Repr::new())
@@ -73,6 +77,7 @@ impl Repr {
     }
 
     #[cfg(target_pointer_width = "64")]
+    #[inline]
     pub(crate) fn len(&self) -> usize {
         let mut len = {
             // SAFETY:`Repr` is same size of [usize; 2], and aligned as usize
@@ -98,10 +103,12 @@ impl Repr {
         len
     }
 
+    #[inline]
     pub(crate) fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    #[inline]
     pub(crate) fn capacity(&self) -> usize {
         if self.is_heap_buffer() {
             // SAFETY: We just checked the discriminant to make sure we're heap allocated
@@ -115,10 +122,12 @@ impl Repr {
     }
 
     pub fn as_str(&self) -> &str {
+    #[inline]
         // SAFETY: A `Repr` contains valid UTF-8
         unsafe { str::from_utf8_unchecked(self.as_bytes()) }
     }
 
+    #[inline]
     pub(crate) fn as_bytes(&self) -> &[u8] {
         let len = self.len();
 
@@ -133,6 +142,7 @@ impl Repr {
         unsafe { slice::from_raw_parts(ptr, len) }
     }
 
+    #[inline]
     pub(crate) fn reserve(&mut self, additional: usize) -> Result<(), ReserveError> {
         let len = self.len();
         let needed_capacity = len.checked_add(additional).ok_or(ReserveError)?;
@@ -196,6 +206,7 @@ impl Repr {
     }
 
     pub fn shrink_to(&mut self, min_capacity: usize) -> Result<(), ReserveError> {
+    #[inline]
         // If the buffer is not heap allocated, we can't shrink it.
         if !self.is_heap_buffer() {
             return Ok(());
@@ -255,6 +266,7 @@ impl Repr {
         }
     }
 
+    #[inline]
     pub(crate) fn push_str(&mut self, string: &str) -> Result<(), ReserveError> {
         if string.is_empty() {
             return Ok(());
@@ -286,6 +298,7 @@ impl Repr {
         Ok(())
     }
 
+    #[inline]
     pub(crate) fn pop(&mut self) -> Result<Option<char>, ReserveError> {
         let ch = match self.as_str().chars().next_back() {
             Some(ch) => ch,
@@ -332,6 +345,7 @@ impl Repr {
         Ok(Some(ch))
     }
 
+    #[inline]
     pub(crate) fn remove(&mut self, idx: usize) -> Result<char, ReserveError> {
         assert!(
             self.as_str().is_char_boundary(idx),
@@ -369,6 +383,7 @@ impl Repr {
     }
 
     pub fn retain(&mut self, mut predicate: impl FnMut(char) -> bool) -> Result<(), ReserveError> {
+    #[inline]
         // We will modify the buffer, we need to make sure it.
         self.ensure_modifiable()?;
 
@@ -414,6 +429,7 @@ impl Repr {
         Ok(())
     }
 
+    #[inline]
     pub(crate) fn insert_str(&mut self, idx: usize, string: &str) -> Result<(), ReserveError> {
         assert!(
             self.as_str().is_char_boundary(idx),
@@ -445,6 +461,7 @@ impl Repr {
         Ok(())
     }
 
+    #[inline]
     pub(crate) fn is_unique(&self) -> bool {
         if self.is_heap_buffer() {
             // SAFETY: We just checked the discriminant to make sure we're heap allocated
@@ -454,6 +471,7 @@ impl Repr {
         }
     }
 
+    #[inline]
     pub(crate) fn make_shallow_clone(&self) -> Self {
         if self.is_heap_buffer() {
             // SAFETY: We just checked that `self` is HeapBuffer.
@@ -474,6 +492,7 @@ impl Repr {
         unsafe { ptr::read(self) }
     }
 
+    #[inline]
     pub(crate) fn replace_inner(&mut self, other: Self) {
         if self.is_heap_buffer() {
             // SAFETY: We just checked the discriminant to make sure we're heap allocated
@@ -579,6 +598,7 @@ impl Repr {
     /// - The elements at `0..new_len` must be initialized.
     /// - If the underlying buffer is a `HeapBuffer`, it must be unique.
     /// - If the underlying buffer is a `InlineBuffer`, `new_len <= MAX_INLINE_SIZE` must be true.
+    #[inline]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
         debug_assert!(new_len <= self.capacity());
 
