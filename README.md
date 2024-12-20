@@ -22,15 +22,9 @@ Compact, clone-on-write string.
 - Nich optimized for `Option<LeanString>`.
   - `size_of::<Option<LeanString>>() == size_of::<LeanString>()`
 - High API compatibility for `String`.
+- Supports `no_std` environment.
 
-## TODOs
-
-- [ ] Support 32-bit architecture.
-- [ ] More API compatibility with `String`.
-- [ ] Fuzz testing.
-- [ ] Benchmarking.
-- [ ] Documentation.
-- etc...
+⚠️Currently, `LeanString` only supports 64-bit architecture. I'm working on supporting 32-bit architecture.
 
 ## Example
 
@@ -44,33 +38,46 @@ let small = LeanString::from("Hello");
 let large = LeanString::from("This is a not long but can't store inlined!");
 
 // Clone is O(1), heap buffer is shared.
-let mut shared = large.clone();
+let mut cloned = large.clone();
 
 // Mutating a shared string will copy the heap buffer. (CoW)
-assert_eq!(shared.pop(), Some('!'));
-assert_eq!(shared, "This is a not long but can't store inlined");
-assert_eq!(large, shared + "!");
+assert_eq!(cloned.pop(), Some('!'));
+assert_eq!(cloned, "This is a not long but can't store inlined");
+assert_eq!(large, cloned + "!");
 ```
 
-## Which should I use?
+## Similar String Types
 
-TODO: Compare `LeanString` with `String`, `EcoString`, `CompactString`, etc...
+| Name                                                                                        | Size     | Inline   | `&'static str` | Notes                                          |
+| ------------------------------------------------------------------------------------------- | -------- | -------- | -------------- | ---------------------------------------------- |
+| `String`                                                                                    | 24 bytes | No       | No             | prelude                                        |
+| `Cow<'static, str>`                                                                         | 24 bytes | No       | Yes            | std (alloc)                                    |
+| [`CompactString`](https://docs.rs/compact_str/latest/compact_str/struct.CompactString.html) | 24 bytes | 24 bytes | Yes            | Nich optimized for `Option<_>`                 |
+| [`EcoString`](https://docs.rs/ecow/latest/ecow/string/struct.EcoString.html)                | 16 bytes | 15 bytes | No             | Clone-on-Write, Nich optimized for `Option<_>` |
+| `LeanString` (This crate)                                                                   | 16 bytes | 16 bytes | Yes            | Clone-on-Write, Nich optimized for `Option<_>` |
 
-| Name                | Size     | Inline   | `&'static str` | CoW |
-| ------------------- | -------- | -------- | -------------- | ----|
-| `String`            | 24 bytes | No       | No             | No  |
-| `Cow<'static, str>` | 24 bytes | No       | Yes            | Yes |
-| `CompactString`     | 24 bytes | 24 bytes | Yes            | No  |
-| `EcoString`         | 16 bytes | 15 bytes | No             | Yes |
-| `LeanString`        | 16 bytes | 16 bytes | Yes            | Yes |
+- **Size**: The size of the struct for 64-bit architecture.
+- **Inline**: The maximum size of the string that can be stored inlined (on the stack).
+- **`&'static str`**: Zero-allocation and O(1) construction from `&'static str`.
 
+Other string types may have different properties and use cases.
+
+- [`arcstr`](https://crates.io/crates/arcstr)
+- [`byteyarn`](https://crates.io/crates/byteyarn)
+- [`flexstr`](https://crates.io/crates/flexstr)
+- [`hipstr`](https://crates.io/crates/hipstr)
+- [`imstr`](https://crates.io/crates/imstr)
+- [`kstring`](https://crates.io/crates/kstring)
+- [`smartstring`](https://crates.io/crates/smartstring)
+
+For more comparison and information, please see [Rust String Benchmarks](https://github.com/rosetta-rs/string-rosetta-rs).
 
 ## Special Thanks
 
 The idea and implementation of `LeanString` is inspired by the following projects:
 
-- [EcoString](https://crates.io/crates/ecow)
-- [CompactString](https://crates.io/crates/compact_str)
+- [ecow](https://crates.io/crates/ecow)
+- [compact_str](https://crates.io/crates/compact_str)
 
 I would like to thank the authors of these projects for their great work.
 
