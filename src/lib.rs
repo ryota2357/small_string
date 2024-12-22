@@ -998,7 +998,7 @@ impl From<char> for LeanString {
     #[inline]
     #[track_caller]
     fn from(value: char) -> Self {
-        LeanString(Repr::from_str(value.encode_utf8(&mut [0; 4])).unwrap_with_msg())
+        LeanString(Repr::from_char(value))
     }
 }
 
