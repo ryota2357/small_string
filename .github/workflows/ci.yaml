@@ -7,6 +7,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  CARGO_TERM_COLOR: "always"
+  RUSTFLAGS: "-D warnings"
+  PROPTEST_CASES: 10000
+  MIRIFLAGS: "-Zmiri-strict-provenance"
+
 jobs:
   check:
     name: Check
@@ -21,7 +27,7 @@ jobs:
       - name: Lint check
         run: |
           cargo check --all-features
-          cargo clippy --all-features -- -D warnings
+          cargo clippy --all-features
 
   test:
     name: Test
