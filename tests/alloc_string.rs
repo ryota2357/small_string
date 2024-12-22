@@ -2,14 +2,14 @@
 // https://github.com/rust-lang/rust/blob/c434b4b4b6cd20560c5b32e80b2b22618a4da3dd/library/alloc/tests/string.rs
 
 // use std::assert_matches::assert_matches;
-use std::borrow::Cow;
+// use std::borrow::Cow;
 // use std::cell::Cell;
 // use std::collections::TryReserveErrorKind::*;
 // use std::ops::Bound::*;
 // use std::ops::{Bound, RangeBounds};
-use std::{panic, str};
-
+// use std::{panic, str};
 use lean_string::{LeanString, ToLeanString};
+use std::{borrow::Cow, panic};
 
 // pub trait IntoCow<'a, B: ?Sized>
 // where
@@ -42,11 +42,11 @@ fn test_from_cow_str() {
     assert_eq!(LeanString::from(Cow::Owned(String::from("string"))), "string");
 }
 
-#[test]
-fn test_unsized_to_string() {
-    let s: &str = "abc";
-    let _: LeanString = (*s).to_lean_string();
-}
+// #[test]
+// fn test_unsized_to_string() {
+//     let s: &str = "abc";
+//     let _: LeanString = (*s).to_lean_string();
+// }
 
 #[test]
 fn test_from_utf8() {

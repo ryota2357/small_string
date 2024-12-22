@@ -1,4 +1,4 @@
-use lean_string::LeanString;
+use lean_string::{LeanString, ToLeanString};
 use proptest::{prelude::*, property_test};
 
 #[property_test]
@@ -64,4 +64,52 @@ fn collect_from_strings(input: Vec<String>) {
     let lean = input.clone().into_iter().collect::<LeanString>();
     let string = input.into_iter().collect::<String>();
     prop_assert_eq!(&lean, &string);
+}
+
+macro_rules! test_integer_to_lean_string {
+    ($($ty:ty),* $(,)?) => {$(
+        paste::paste! {
+            #[property_test]
+            #[cfg_attr(miri, ignore)]
+            fn [<$ty _to_lean_string>](i: $ty) {
+                prop_assert_eq!(i.to_lean_string(), i.to_string());
+            }
+            #[property_test]
+            #[cfg_attr(miri, ignore)]
+            fn [<nonzero_ $ty _to_lean_string>](i: core::num::NonZero<$ty>) {
+                prop_assert_eq!(i.to_lean_string(), i.to_string());
+            }
+        }
+    )*};
+}
+test_integer_to_lean_string!(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize);
+
+#[property_test]
+#[cfg_attr(miri, ignore)]
+fn f32_to_lean_string(f: f32) {
+    let lean = f.to_lean_string();
+    let float = lean.parse::<f32>().unwrap();
+    prop_assert_eq!(f, float);
+}
+
+#[property_test]
+#[cfg_attr(miri, ignore)]
+fn f64_to_lean_string(f: f64) {
+    let lean = f.to_lean_string();
+    let float = lean.parse::<f64>().unwrap();
+    prop_assert_eq!(f, float);
+}
+
+#[test]
+fn bool_to_lean_string() {
+    let t = true;
+    let f = false;
+    assert_eq!(t.to_lean_string(), t.to_string());
+    assert_eq!(f.to_lean_string(), f.to_string());
+}
+
+#[property_test]
+#[cfg_attr(miri, ignore)]
+fn char_to_lean_string(c: char) {
+    prop_assert_eq!(c.to_lean_string(), c.to_string());
 }

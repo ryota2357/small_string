@@ -2,7 +2,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![no_std]
 
-#[macro_use] //  used by ToLeanString impls
 extern crate alloc;
 
 #[cfg(feature = "std")]
@@ -32,7 +31,7 @@ mod errors;
 pub use errors::*;
 
 mod traits;
-pub use traits::*;
+pub use traits::ToLeanString;
 
 mod features;
 

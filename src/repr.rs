@@ -22,6 +22,9 @@ use last_byte::LastByte;
 #[cfg(feature = "last_byte")]
 pub use last_byte::LastByte;
 
+mod num_to_repr;
+use num_to_repr::NumToRepr;
+
 const MAX_INLINE_SIZE: usize = 2 * size_of::<usize>();
 
 #[repr(C)]
@@ -51,6 +54,34 @@ impl Repr {
         } else {
             HeapBuffer::new(text).map(Repr::from_heap)
         }
+    }
+
+    #[inline]
+    pub(crate) fn from_char(ch: char) -> Self {
+        let inline = unsafe {
+            let mut buffer = [0; 4];
+            let str = ch.encode_utf8(&mut buffer);
+            InlineBuffer::new(str)
+        };
+        Repr::from_inline(inline)
+    }
+
+    #[inline]
+    pub(crate) fn from_bool(b: bool) -> Self {
+        // SAFETY: "true" and "false" are short enough (less than 8 bytes) to fit in InlineBuffer.
+        const TRUE: Repr = Repr::from_inline(unsafe { InlineBuffer::new("true") });
+        const FALSE: Repr = Repr::from_inline(unsafe { InlineBuffer::new("false") });
+        if b {
+            TRUE
+        } else {
+            FALSE
+        }
+    }
+
+    #[inline]
+    #[allow(private_bounds)]
+    pub(crate) fn from_num(value: impl NumToRepr) -> Result<Self, ReserveError> {
+        value.into_repr()
     }
 
     #[inline]
@@ -562,6 +593,8 @@ impl Repr {
         Ok(())
     }
 
+    /// Gets a mutable u8 slice of **capacity** length buffer.
+    ///
     /// # Safety
     /// - The buffer is not StaticBuffer
     /// - If the buffer is HeapBuffer, it must be unique.
@@ -582,6 +615,8 @@ impl Repr {
         slice::from_raw_parts_mut(ptr, cap)
     }
 
+    /// Gets a mutable str of length buffer.
+    //
     /// # Safety
     /// - The buffer is not StaticBuffer
     /// - If the buffer is HeapBuffer, it must be unique.

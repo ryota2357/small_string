@@ -1,14 +1,69 @@
-use crate::LeanString;
-use core::fmt;
+use crate::{repr::Repr, LeanString, ToLeanStringError, UnwrapWithMsg};
+use alloc::string::String;
+use castaway::{match_type, LifetimeFree};
+use core::{fmt, fmt::Write, num::NonZero};
 
 /// A trait for converting a value to a [`LeanString`].
 pub trait ToLeanString {
-    fn to_lean_string(&self) -> LeanString;
+    fn to_lean_string(&self) -> LeanString {
+        self.try_to_lean_string().unwrap_with_msg()
+    }
+
+    fn try_to_lean_string(&self) -> Result<LeanString, ToLeanStringError>;
 }
 
-// TODO: optimize for some types using `castaway` crate or similar.
-impl<T: fmt::Display + ?Sized> ToLeanString for T {
-    fn to_lean_string(&self) -> LeanString {
-        LeanString::from(format!("{}", self))
+// NOTE: the restriction of `castaway` is `T` must be Sized.
+impl<T: fmt::Display> ToLeanString for T {
+    fn try_to_lean_string(&self) -> Result<LeanString, ToLeanStringError> {
+        let repr = match_type!(self, {
+            &i8 as s => Repr::from_num(*s)?,
+            &u8 as s => Repr::from_num(*s)?,
+            &i16 as s => Repr::from_num(*s)?,
+            &u16 as s => Repr::from_num(*s)?,
+            &i32 as s => Repr::from_num(*s)?,
+            &u32 as s => Repr::from_num(*s)?,
+            &i64 as s => Repr::from_num(*s)?,
+            &u64 as s => Repr::from_num(*s)?,
+            &i128 as s => Repr::from_num(*s)?,
+            &u128 as s => Repr::from_num(*s)?,
+            &isize as s => Repr::from_num(*s)?,
+            &usize as s => Repr::from_num(*s)?,
+
+            &NonZero<i8> as s => Repr::from_num(*s)?,
+            &NonZero<u8> as s => Repr::from_num(*s)?,
+            &NonZero<i16> as s => Repr::from_num(*s)?,
+            &NonZero<u16> as s => Repr::from_num(*s)?,
+            &NonZero<i32> as s => Repr::from_num(*s)?,
+            &NonZero<u32> as s => Repr::from_num(*s)?,
+            &NonZero<i64> as s => Repr::from_num(*s)?,
+            &NonZero<u64> as s => Repr::from_num(*s)?,
+            &NonZero<i128> as s => Repr::from_num(*s)?,
+            &NonZero<u128> as s => Repr::from_num(*s)?,
+            &NonZero<isize> as s => Repr::from_num(*s)?,
+            &NonZero<usize> as s => Repr::from_num(*s)?,
+
+            &f32 as s => Repr::from_num(*s)?,
+            &f64 as s => Repr::from_num(*s)?,
+
+            &bool as s => Repr::from_bool(*s),
+            &char as s => Repr::from_char(*s),
+
+            &String as s => Repr::from_str(s.as_str())?,
+            &LeanString as s => return Ok(s.clone()),
+
+            s => {
+                let mut buf = LeanString::new();
+                write!(buf, "{}", s)?;
+                return Ok(buf)
+            }
+        });
+        Ok(LeanString(repr))
     }
 }
+
+// SAFETY:
+// - `LeanString` is `'static`.
+// - `LeanString` does not contain any lifetime parameter.
+// These two conditions are also applied to `Repr` which is the only field of `LeanString`.
+unsafe impl LifetimeFree for LeanString {}
+unsafe impl LifetimeFree for Repr {}
