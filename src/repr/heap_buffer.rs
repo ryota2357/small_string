@@ -18,7 +18,7 @@ pub(crate) fn amortized_growth(cur_len: usize, additional: usize) -> usize {
 }
 
 #[repr(C)]
-pub(crate) struct HeapBuffer {
+pub(super) struct HeapBuffer {
     // | Header | Data (array of `u8`) |
     //          ^ ptr
     ptr: NonNull<u8>,
